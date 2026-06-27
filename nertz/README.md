@@ -8,15 +8,15 @@ improved in design, feel, and depth.
 
 ## Run it
 
-```bash
-# from the repo root
-cd nertz
-python3 -m http.server 8000   # then visit http://localhost:8000
-# …or simply double-click index.html
-```
+- **Instant play:** double-click **`Nertz-Royale.html`** — the whole game in one
+  self-contained file. No server, no install, works offline on any OS.
+- **From source:** `cd nertz && python3 -m http.server 8000`, then open
+  http://localhost:8000 (or just open `index.html`).
+- **As a desktop app / `.dmg`:** see **[DESKTOP.md](DESKTOP.md)** — `npm install`
+  then `npm run dist` builds a macOS `.dmg` (and `dist:win` / `dist:linux` for
+  the other platforms).
 
-Works fully offline (`file://` friendly). Progress is saved in your browser's
-`localStorage`.
+Progress is saved in your browser's `localStorage`.
 
 ## How to play
 

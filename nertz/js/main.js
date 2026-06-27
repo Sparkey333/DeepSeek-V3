@@ -305,6 +305,48 @@
   function wireGameHud() {
     $("#btnQuit").addEventListener("click", backToMenu);
     $("#btnHint").addEventListener("click", showHint);
+    $("#btnAuto").addEventListener("click", autoPlay);
+    $("#btnRestart").addEventListener("click", () => startGame(App.mode));
+    wireKeyboard();
+  }
+
+  // Sweep every currently-playable top card to the foundations, repeatedly,
+  // until nothing else fits. A common solitaire quality-of-life feature.
+  function autoPlay() {
+    if (!App.running) return;
+    let moved = true, total = 0;
+    while (moved && App.running) {
+      moved = false;
+      const tries = [{ zone: "nertz" }, { zone: "waste" }];
+      for (let i = 0; i < 4; i++) tries.push({ zone: "work", pileIndex: i, cardIndex: App.engine.work[i].length - 1 });
+      for (const s of tries) if (App.engine.playToFoundation(s)) { moved = true; total++; }
+    }
+    if (total) { App.ui.render(App.engine); syncHud(); beep(720); App.ui.toast("Auto-played " + total + " card" + (total > 1 ? "s" : "") + " ⤴"); }
+    else App.ui.toast("Nothing to auto-play right now");
+  }
+
+  function anyOverlayOpen() {
+    return $("#overlayRound").classList.contains("show") || $("#overlayPanel").classList.contains("show");
+  }
+
+  function wireKeyboard() {
+    if (App._kbBound) return; // bind once
+    App._kbBound = true;
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && anyOverlayOpen()) {
+        $("#overlayRound").classList.remove("show");
+        $("#overlayPanel").classList.remove("show");
+        return;
+      }
+      if (!App.running || anyOverlayOpen()) return;
+      switch (e.key) {
+        case " ": case "f": case "F": e.preventDefault(); onFlipStock(); break;
+        case "a": case "A": autoPlay(); break;
+        case "h": case "H": showHint(); break;
+        case "r": case "R": startGame(App.mode); break;
+        case "Escape": backToMenu(); break;
+      }
+    });
   }
 
   function showHint() {

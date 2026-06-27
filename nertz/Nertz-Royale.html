@@ -1,0 +1,1858 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0b3d2e" />
+  <title>Nertz Royale — Fast-Play Solitaire Racing</title>
+  <style>
+/* ============================================================
+   Nertz Royale — stylesheet
+   A premium card-table aesthetic: deep felt, soft depth, crisp cards.
+   ============================================================ */
+:root {
+  --felt-1: #0c4733;
+  --felt-2: #0a3526;
+  --felt-3: #072018;
+  --ink: #0e1512;
+  --paper: #f7f4ec;
+  --paper-edge: #d9d2c1;
+  --red: #c8202a;
+  --red-soft: #e2545b;
+  --black: #1c2330;
+  --gold: #f5c451;
+  --gold-deep: #d39a26;
+  --accent: #38e0a6;
+  --accent-deep: #16a079;
+  --text: #eaf3ef;
+  --text-dim: #9fc3b4;
+  --shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  --radius: 16px;
+  --card-w: 76px;
+  --card-h: 106px;
+  --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; height: 100%; }
+body {
+  font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: var(--text);
+  background:
+    radial-gradient(120% 90% at 50% -10%, var(--felt-1), var(--felt-2) 55%, var(--felt-3));
+  overflow: hidden;
+  user-select: none;
+}
+
+#app { display: flex; flex-direction: column; height: 100vh; height: 100dvh; }
+
+/* ---------------- Top bar ---------------- */
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 16px; gap: 12px;
+  background: linear-gradient(180deg, rgba(0,0,0,0.32), rgba(0,0,0,0));
+  z-index: 20;
+}
+.brand { display: flex; align-items: center; gap: 9px; font-weight: 800; letter-spacing: -0.02em; }
+.brand-mark {
+  font-size: 18px; line-height: 1;
+  background: linear-gradient(135deg, var(--gold), var(--red-soft));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,.4));
+}
+.brand-name { font-size: 19px; }
+.brand-accent { color: var(--gold); }
+.topbar-right { display: flex; align-items: center; gap: 8px; }
+
+.icon-btn {
+  width: 40px; height: 40px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.06); color: var(--text); font-size: 18px; cursor: pointer;
+  display: grid; place-items: center; transition: transform .12s var(--ease), background .15s;
+}
+.icon-btn:hover { background: rgba(255,255,255,0.13); transform: translateY(-1px); }
+.icon-btn:active { transform: translateY(0) scale(0.96); }
+.icon-btn.ghost { background: transparent; border-color: transparent; font-size: 22px; }
+
+.lvl-chip {
+  display: flex; align-items: center; gap: 9px; padding: 5px 12px 5px 6px;
+  background: rgba(0,0,0,0.28); border: 1px solid rgba(255,255,255,0.09);
+  border-radius: 999px;
+}
+.lvl-badge {
+  width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center;
+  font-weight: 800; font-size: 14px; color: #2a1c00;
+  background: radial-gradient(circle at 35% 30%, var(--gold), var(--gold-deep));
+  box-shadow: inset 0 1px 1px rgba(255,255,255,.5), 0 2px 6px rgba(0,0,0,.4);
+}
+.lvl-meta { display: flex; flex-direction: column; gap: 3px; }
+.lvl-bar { width: 86px; height: 6px; border-radius: 4px; background: rgba(255,255,255,0.12); overflow: hidden; }
+.lvl-bar span { display: block; height: 100%; width: 0%; border-radius: 4px;
+  background: linear-gradient(90deg, var(--accent-deep), var(--accent)); transition: width .6s var(--ease); }
+.lvl-coins { font-size: 11px; color: var(--gold); font-weight: 700; }
+
+/* ---------------- Screens ---------------- */
+.screen { flex: 1; overflow: auto; display: none; }
+.screen.active { display: flex; }
+.screen--menu { flex-direction: column; align-items: center; padding: 8px 18px 28px; }
+.screen--game { flex-direction: column; }
+
+/* ---------------- Menu ---------------- */
+.hero { text-align: center; max-width: 640px; margin: 10px auto 22px; }
+.hero-title { font-size: clamp(26px, 5vw, 40px); font-weight: 850; letter-spacing: -0.03em; margin: 6px 0; line-height: 1.05; }
+.hero-title span { color: var(--gold); }
+.hero-sub { color: var(--text-dim); font-size: 15px; margin: 0; }
+
+.mode-grid {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px;
+  width: 100%; max-width: 680px;
+}
+.mode-card {
+  position: relative; text-align: left; cursor: pointer;
+  display: flex; flex-direction: column; gap: 4px; padding: 18px 18px 16px;
+  border-radius: var(--radius); border: 1px solid rgba(255,255,255,0.1);
+  background: linear-gradient(160deg, rgba(255,255,255,0.09), rgba(255,255,255,0.03));
+  color: var(--text); transition: transform .15s var(--ease), box-shadow .2s, border-color .2s;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+}
+.mode-card:hover { transform: translateY(-3px); border-color: rgba(255,255,255,0.22); box-shadow: var(--shadow); }
+.mode-card:active { transform: translateY(0) scale(0.99); }
+.mode-card--primary {
+  background: linear-gradient(160deg, rgba(56,224,166,0.22), rgba(22,160,121,0.08));
+  border-color: rgba(56,224,166,0.45);
+}
+.mode-emoji { font-size: 26px; }
+.mode-title { font-size: 18px; font-weight: 800; }
+.mode-desc { font-size: 13px; color: var(--text-dim); }
+
+.menu-config {
+  margin-top: 20px; width: 100%; max-width: 680px;
+  background: rgba(0,0,0,0.22); border: 1px solid rgba(255,255,255,0.08);
+  border-radius: var(--radius); padding: 14px 16px; display: flex; flex-direction: column; gap: 12px;
+}
+.cfg-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.cfg-label { font-weight: 700; color: var(--text-dim); font-size: 14px; }
+.seg { display: inline-flex; background: rgba(0,0,0,0.3); border-radius: 10px; padding: 3px; gap: 3px; }
+.seg button {
+  border: 0; background: transparent; color: var(--text-dim); font-weight: 700; font-size: 13px;
+  padding: 7px 14px; border-radius: 8px; cursor: pointer; transition: .15s;
+}
+.seg button.on { background: linear-gradient(180deg, var(--accent), var(--accent-deep)); color: #062018; }
+
+/* ---------------- Game HUD ---------------- */
+.game-hud {
+  display: flex; align-items: center; gap: 14px; padding: 8px 14px;
+  background: linear-gradient(180deg, rgba(0,0,0,0.3), rgba(0,0,0,0));
+}
+.hud-stat { display: flex; flex-direction: column; line-height: 1.05; }
+.hud-k { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); }
+.hud-v { font-size: 18px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.hud-spacer { flex: 1; }
+
+/* ---------------- Opponents ---------------- */
+.opp-strip { display: flex; gap: 10px; padding: 4px 14px 8px; overflow-x: auto; }
+.opp {
+  display: flex; align-items: center; gap: 9px; padding: 7px 12px 7px 8px;
+  background: rgba(0,0,0,0.26); border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 999px; flex: 0 0 auto; transition: border-color .3s;
+}
+.opp.lead { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold) inset; }
+.opp-ava { font-size: 20px; }
+.opp-meta { display: flex; flex-direction: column; line-height: 1.1; }
+.opp-name { font-size: 12px; font-weight: 700; }
+.opp-nertz { font-size: 11px; color: var(--text-dim); }
+.opp-nertz b { color: var(--gold); }
+.opp-pip { width: 56px; height: 5px; border-radius: 3px; background: rgba(255,255,255,0.12); overflow: hidden; margin-top: 3px; }
+.opp-pip span { display: block; height: 100%; background: var(--red-soft); transition: width .4s var(--ease); }
+
+/* ---------------- Foundations ---------------- */
+.foundations {
+  display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;
+  padding: 10px 14px; min-height: calc(var(--card-h) + 16px);
+}
+
+/* ---------------- Player board ---------------- */
+.player-board {
+  display: flex; gap: 18px; padding: 6px 16px 18px; justify-content: center;
+  align-items: flex-start; flex-wrap: wrap; margin-top: auto;
+}
+.board-left { display: flex; flex-direction: column; gap: 12px; }
+.stock-row { display: flex; gap: 12px; }
+.work-row { display: flex; gap: 12px; }
+body.left-handed .player-board { flex-direction: row-reverse; }
+
+.pile-slot {
+  width: var(--card-w); height: var(--card-h); border-radius: 12px; position: relative;
+  border: 2px dashed rgba(255,255,255,0.14); background: rgba(0,0,0,0.16);
+  display: grid; place-items: center; transition: border-color .15s, background .15s, transform .12s;
+}
+.pile-slot .pile-label {
+  position: absolute; bottom: 6px; left: 0; right: 0; text-align: center;
+  font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.32);
+  pointer-events: none;
+}
+.work-row .pile-slot { height: auto; min-height: var(--card-h); align-items: flex-start; }
+.pile-slot.drop-ok { border-color: var(--accent); background: rgba(56,224,166,0.14); }
+.pile-slot.drop-bad { border-color: var(--red-soft); }
+
+/* Foundation slot glow */
+.foundation-slot { border-color: rgba(245,196,81,0.35); }
+
+/* ---------------- Cards ---------------- */
+.card {
+  width: var(--card-w); height: var(--card-h); border-radius: 11px; position: relative;
+  background: linear-gradient(180deg, #fff, var(--paper)); color: var(--black);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.35), inset 0 0 0 1px var(--paper-edge);
+  cursor: grab; touch-action: none;
+  transition: transform .14s var(--ease), box-shadow .14s;
+  display: flex; flex-direction: column; justify-content: space-between; padding: 6px 7px;
+}
+.card.red { color: var(--red); }
+.card.dragging { cursor: grabbing; z-index: 999; box-shadow: 0 18px 40px rgba(0,0,0,0.5); }
+.card.face-down {
+  background:
+    repeating-linear-gradient(45deg, #1a4a78 0 7px, #15406b 7px 14px),
+    linear-gradient(135deg, #1f5489, #122f54);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.35), inset 0 0 0 2px rgba(255,255,255,0.12);
+}
+.card.face-down::after {
+  content: "♠"; position: absolute; inset: 0; display: grid; place-items: center;
+  font-size: 26px; color: rgba(255,255,255,0.16);
+}
+.card .corner { font-weight: 800; font-size: 15px; line-height: 1; display: flex; flex-direction: column; align-items: center; width: 16px; }
+.card .corner.br { align-self: flex-end; transform: rotate(180deg); }
+.card .corner .c-rank { font-size: 15px; }
+.card .corner .c-suit { font-size: 13px; }
+.card .pip-center { position: absolute; inset: 0; display: grid; place-items: center; font-size: 30px; opacity: 0.92; }
+.card.playable-hint { animation: hintPulse 0.9s var(--ease) infinite; }
+.card.compact { box-shadow: 0 1px 3px rgba(0,0,0,0.3), inset 0 0 0 1px var(--paper-edge); }
+
+/* Stacked work pile cards overlap */
+.work-pile { position: relative; width: var(--card-w); }
+.work-pile .card { position: absolute; left: 0; }
+
+@keyframes hintPulse {
+  0%,100% { box-shadow: 0 2px 5px rgba(0,0,0,0.35), inset 0 0 0 1px var(--paper-edge); transform: translateY(0); }
+  50% { box-shadow: 0 0 0 3px var(--accent), 0 6px 16px rgba(56,224,166,0.5); transform: translateY(-3px); }
+}
+
+/* badge on nertz pile count */
+.nertz-count {
+  position: absolute; top: -8px; right: -8px; min-width: 22px; height: 22px; padding: 0 5px;
+  border-radius: 11px; background: var(--red); color: #fff; font-size: 12px; font-weight: 800;
+  display: grid; place-items: center; box-shadow: 0 2px 6px rgba(0,0,0,0.4); z-index: 5;
+}
+
+/* ---------------- Overlays / sheets ---------------- */
+.overlay {
+  position: fixed; inset: 0; background: rgba(3,12,9,0.62); backdrop-filter: blur(6px);
+  display: none; align-items: center; justify-content: center; padding: 20px; z-index: 50;
+}
+.overlay.show { display: flex; animation: fadeIn .2s var(--ease); }
+.sheet {
+  width: 100%; max-width: 440px; background: linear-gradient(180deg, #103b2c, #0b2c20);
+  border: 1px solid rgba(255,255,255,0.1); border-radius: 22px; padding: 24px;
+  box-shadow: var(--shadow); position: relative; max-height: 88vh; overflow: auto;
+  animation: pop .28s var(--ease);
+}
+.result-sheet { text-align: center; }
+.result-emoji { font-size: 52px; }
+.result-title { font-size: 26px; font-weight: 850; margin: 6px 0 16px; }
+.result-table { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+.res-row { display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 9px 12px; border-radius: 10px; background: rgba(255,255,255,0.05); }
+.res-row.me { background: rgba(245,196,81,0.16); border: 1px solid rgba(245,196,81,0.4); }
+.res-name { display: flex; align-items: center; gap: 8px; font-weight: 700; }
+.res-rank { width: 22px; color: var(--text-dim); font-weight: 800; }
+.res-score { font-weight: 850; font-variant-numeric: tabular-nums; }
+.reward-row { display: flex; gap: 10px; justify-content: center; margin-bottom: 18px; flex-wrap: wrap; }
+.reward-pill { background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 999px;
+  padding: 7px 14px; font-weight: 800; font-size: 14px; }
+.reward-pill.xp { color: var(--accent); }
+.reward-pill.coin { color: var(--gold); }
+
+.sheet-actions { display: flex; gap: 10px; }
+.btn { flex: 1; padding: 13px; border-radius: 12px; border: 0; font-weight: 800; font-size: 15px; cursor: pointer; transition: .15s; }
+.btn-primary { background: linear-gradient(180deg, var(--accent), var(--accent-deep)); color: #062018; }
+.btn-primary:hover { filter: brightness(1.06); transform: translateY(-1px); }
+.btn-ghost { background: rgba(255,255,255,0.08); color: var(--text); }
+
+.sheet-close { position: absolute; top: 14px; right: 14px; border: 0; background: rgba(255,255,255,0.08);
+  color: var(--text); width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 14px; }
+
+.panel-tabs { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
+.ptab { border: 0; background: rgba(255,255,255,0.06); color: var(--text-dim); padding: 8px 13px;
+  border-radius: 999px; font-weight: 700; font-size: 13px; cursor: pointer; }
+.ptab.on { background: var(--gold); color: #2a1c00; }
+.panel-body { min-height: 200px; }
+
+.stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.stat-box { background: rgba(0,0,0,0.24); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 14px; }
+.stat-box .sb-v { font-size: 24px; font-weight: 850; }
+.stat-box .sb-k { font-size: 12px; color: var(--text-dim); text-transform: uppercase; letter-spacing: .06em; }
+
+.ach-list { display: flex; flex-direction: column; gap: 8px; }
+.ach { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 12px;
+  background: rgba(0,0,0,0.22); border: 1px solid rgba(255,255,255,0.07); }
+.ach.locked { opacity: 0.5; filter: grayscale(0.6); }
+.ach-ic { font-size: 26px; width: 40px; text-align: center; }
+.ach-name { font-weight: 800; }
+.ach-desc { font-size: 12px; color: var(--text-dim); }
+
+.board-list { display: flex; flex-direction: column; gap: 6px; }
+.board-empty { text-align: center; color: var(--text-dim); padding: 30px; }
+
+.set-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.07); }
+.switch { width: 46px; height: 26px; border-radius: 999px; background: rgba(255,255,255,0.15); position: relative;
+  cursor: pointer; transition: background .2s; border: 0; }
+.switch.on { background: var(--accent-deep); }
+.switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%;
+  background: #fff; transition: transform .2s var(--ease); }
+.switch.on::after { transform: translateX(20px); }
+.danger-link { color: var(--red-soft); background: none; border: 0; cursor: pointer; font-weight: 700; padding: 8px 0; }
+
+/* ---------------- Toasts & FX ---------------- */
+.toast-host { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%);
+  display: flex; flex-direction: column; gap: 8px; z-index: 80; align-items: center; pointer-events: none; }
+.toast { background: rgba(8,28,21,0.95); border: 1px solid rgba(255,255,255,0.14); color: var(--text);
+  padding: 10px 16px; border-radius: 999px; font-weight: 700; font-size: 14px; box-shadow: var(--shadow);
+  animation: toastIn .3s var(--ease); display: flex; align-items: center; gap: 8px; }
+.toast.gold { border-color: var(--gold); }
+.fx-layer { position: fixed; inset: 0; pointer-events: none; z-index: 70; overflow: hidden; }
+.confetti { position: absolute; width: 9px; height: 14px; will-change: transform, opacity; }
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes pop { from { transform: scale(0.92) translateY(10px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes toastIn { from { transform: translateY(12px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* reduced motion */
+body.reduce-motion *, body.reduce-motion *::after { animation: none !important; transition-duration: .01ms !important; }
+
+/* ---------------- Responsive ---------------- */
+@media (max-width: 560px) {
+  :root { --card-w: 60px; --card-h: 84px; }
+  .mode-grid { grid-template-columns: 1fr; }
+  .hud-stat .hud-v { font-size: 16px; }
+}
+@media (max-width: 420px) {
+  :root { --card-w: 52px; --card-h: 73px; }
+  .player-board { gap: 10px; }
+  .work-row { gap: 7px; }
+}
+
+</style>
+  </head>
+<body>
+  <div id="app">
+    <!-- ===================== TOP BAR ===================== -->
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark">♠♥</span>
+        <span class="brand-name">Nertz<span class="brand-accent">Royale</span></span>
+      </div>
+      <div class="topbar-right">
+        <div class="lvl-chip" id="lvlChip" title="Your level &amp; XP">
+          <span class="lvl-badge" id="lvlBadge">1</span>
+          <div class="lvl-meta">
+            <div class="lvl-bar"><span id="lvlBarFill"></span></div>
+            <span class="lvl-coins" id="coins">0 ◈</span>
+          </div>
+        </div>
+        <button class="icon-btn" id="navStats" title="Stats &amp; achievements">📊</button>
+        <button class="icon-btn" id="navBoard" title="Leaderboard">🏆</button>
+        <button class="icon-btn" id="navSettings" title="Settings">⚙️</button>
+      </div>
+    </header>
+
+    <!-- ===================== HOME / MENU ===================== -->
+    <main class="screen screen--menu active" id="screenMenu">
+      <div class="hero">
+        <h1 class="hero-title">Race to empty your <span>Nertz</span> pile.</h1>
+        <p class="hero-sub">The classic fast-play solitaire race — rebuilt, then improved in every way.</p>
+      </div>
+
+      <section class="mode-grid">
+        <button class="mode-card mode-card--primary" data-mode="fast">
+          <span class="mode-emoji">⚡</span>
+          <span class="mode-title">Fast Play</span>
+          <span class="mode-desc">Jump straight in. One quick round vs the bots.</span>
+        </button>
+        <button class="mode-card" data-mode="ranked">
+          <span class="mode-emoji">🏁</span>
+          <span class="mode-title">Ranked Race</span>
+          <span class="mode-desc">Earn XP, climb levels, chase the leaderboard.</span>
+        </button>
+        <button class="mode-card" data-mode="daily">
+          <span class="mode-emoji">📅</span>
+          <span class="mode-title">Daily Challenge</span>
+          <span class="mode-desc">Everyone gets the same shuffle. One shot a day.</span>
+        </button>
+        <button class="mode-card" data-mode="zen">
+          <span class="mode-emoji">🌙</span>
+          <span class="mode-title">Zen Solo</span>
+          <span class="mode-desc">No bots, no clock. Just you and the cards.</span>
+        </button>
+      </section>
+
+      <div class="menu-config" id="menuConfig">
+        <div class="cfg-row">
+          <span class="cfg-label">Opponents</span>
+          <div class="seg" id="cfgOpponents" data-val="2">
+            <button data-v="1">1</button><button data-v="2" class="on">2</button><button data-v="3">3</button>
+          </div>
+        </div>
+        <div class="cfg-row">
+          <span class="cfg-label">Difficulty</span>
+          <div class="seg" id="cfgDifficulty" data-val="normal">
+            <button data-v="easy">Rookie</button><button data-v="normal" class="on">Sharp</button><button data-v="hard">Ace</button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- ===================== GAME ===================== -->
+    <main class="screen screen--game" id="screenGame">
+      <div class="game-hud">
+        <button class="icon-btn ghost" id="btnQuit" title="Back to menu">‹</button>
+        <div class="hud-stat"><span class="hud-k">Score</span><span class="hud-v" id="hudScore">0</span></div>
+        <div class="hud-stat"><span class="hud-k">Nertz left</span><span class="hud-v" id="hudNertz">13</span></div>
+        <div class="hud-stat"><span class="hud-k">Time</span><span class="hud-v" id="hudTime">0:00</span></div>
+        <div class="hud-spacer"></div>
+        <button class="icon-btn ghost" id="btnAuto" title="Auto-play to foundations (A)">⤴</button>
+        <button class="icon-btn ghost" id="btnRestart" title="New deal (R)">↻</button>
+        <button class="icon-btn ghost" id="btnHint" title="Hint (H)">💡</button>
+      </div>
+
+      <!-- Opponents strip -->
+      <div class="opp-strip" id="oppStrip"></div>
+
+      <!-- Shared foundations -->
+      <div class="foundations" id="foundations"></div>
+
+      <!-- Player's board -->
+      <div class="player-board">
+        <div class="board-left">
+          <div class="pile-slot" id="nertzSlot" data-zone="nertz">
+            <div class="pile-label">Nertz</div>
+          </div>
+          <div class="stock-row">
+            <div class="pile-slot stock" id="stockSlot" data-zone="stock">
+              <div class="pile-label">Stock</div>
+            </div>
+            <div class="pile-slot waste" id="wasteSlot" data-zone="waste">
+              <div class="pile-label">Waste</div>
+            </div>
+          </div>
+        </div>
+        <div class="work-row" id="workRow"></div>
+      </div>
+    </main>
+
+    <!-- ===================== OVERLAYS ===================== -->
+    <div class="overlay" id="overlayRound">
+      <div class="sheet result-sheet">
+        <div class="result-emoji" id="resultEmoji">🎉</div>
+        <h2 class="result-title" id="resultTitle">Round over</h2>
+        <div class="result-table" id="resultTable"></div>
+        <div class="reward-row" id="rewardRow"></div>
+        <div class="sheet-actions">
+          <button class="btn btn-ghost" id="resultMenu">Menu</button>
+          <button class="btn btn-primary" id="resultAgain">Play again</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="overlay" id="overlayPanel">
+      <div class="sheet panel-sheet">
+        <button class="sheet-close" id="panelClose">✕</button>
+        <div class="panel-tabs">
+          <button class="ptab on" data-tab="stats">Stats</button>
+          <button class="ptab" data-tab="ach">Achievements</button>
+          <button class="ptab" data-tab="board">Leaderboard</button>
+          <button class="ptab" data-tab="settings">Settings</button>
+        </div>
+        <div class="panel-body" id="panelBody"></div>
+      </div>
+    </div>
+
+    <div class="toast-host" id="toastHost"></div>
+    <div class="fx-layer" id="fxLayer"></div>
+  </div>
+
+  <script>
+/* deck.js — card model & deck utilities for Nertz
+ * Exposed on the global `Nertz` namespace (classic scripts, file:// friendly).
+ */
+(function (g) {
+  "use strict";
+  const Nertz = (g.Nertz = g.Nertz || {});
+
+  const SUITS = [
+    { id: "s", name: "Spades", symbol: "♠", color: "black" },
+    { id: "h", name: "Hearts", symbol: "♥", color: "red" },
+    { id: "d", name: "Diamonds", symbol: "♦", color: "red" },
+    { id: "c", name: "Clubs", symbol: "♣", color: "black" },
+  ];
+
+  const RANK_LABELS = {
+    1: "A", 2: "2", 3: "3", 4: "4", 5: "5", 6: "6", 7: "7",
+    8: "8", 9: "9", 10: "10", 11: "J", 12: "Q", 13: "K",
+  };
+
+  let _uid = 0;
+  function makeCard(suit, rank, owner) {
+    return {
+      id: "c" + _uid++,
+      suit: suit.id,
+      symbol: suit.symbol,
+      color: suit.color,
+      rank: rank,
+      label: RANK_LABELS[rank],
+      owner: owner || null, // player id who played it (for foundation scoring)
+      faceUp: false,
+    };
+  }
+
+  // Build a full 52-card deck. owner tags cards for scoring attribution.
+  function buildDeck(owner) {
+    const deck = [];
+    for (const suit of SUITS) {
+      for (let r = 1; r <= 13; r++) deck.push(makeCard(suit, r, owner));
+    }
+    return deck;
+  }
+
+  // Fisher–Yates shuffle with an optional seeded RNG.
+  function shuffle(arr, rng) {
+    rng = rng || Math.random;
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(rng() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  // Mulberry32 — small deterministic RNG for daily challenges / replays.
+  function seededRng(seed) {
+    let t = seed >>> 0;
+    return function () {
+      t += 0x6d2b79f5;
+      let x = t;
+      x = Math.imul(x ^ (x >>> 15), x | 1);
+      x ^= x + Math.imul(x ^ (x >>> 7), x | 61);
+      return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  function isRed(card) { return card.color === "red"; }
+
+  // Can `card` legally land on `target` in a tableau (build down, alt color)?
+  function canStackTableau(card, target) {
+    if (!target) return true; // empty pile accepts anything
+    return card.rank === target.rank - 1 && isRed(card) !== isRed(target);
+  }
+
+  // Can `card` go on a foundation pile (build up by suit)?
+  function canStackFoundation(card, foundation) {
+    if (!foundation) return card.rank === 1; // only an Ace can start one
+    return card.suit === foundation.suit && card.rank === foundation.top + 1;
+  }
+
+  Nertz.deck = {
+    SUITS, RANK_LABELS, makeCard, buildDeck, shuffle,
+    seededRng, isRed, canStackTableau, canStackFoundation,
+  };
+})(typeof window !== "undefined" ? window : this);
+
+</script>
+  <script>
+/* engine.js — Nertz game state & rules for the human player.
+ * The engine is UI-agnostic; it emits events the UI subscribes to.
+ */
+(function (g) {
+  "use strict";
+  const Nertz = (g.Nertz = g.Nertz || {});
+  const D = Nertz.deck;
+
+  const STOCK_FLIP = 3; // cards turned from stock to waste per flip
+
+  class Engine {
+    /**
+     * @param {object} opts
+     *   opts.rng           - random fn (for deterministic daily mode)
+     *   opts.foundations   - shared foundations array (shared with AI)
+     *   opts.playerId      - id used to tag foundation cards
+     *   opts.onFoundation  - cb(card) when human plays to a foundation
+     */
+    constructor(opts) {
+      opts = opts || {};
+      this.rng = opts.rng || Math.random;
+      this.playerId = opts.playerId || "you";
+      this.foundations = opts.foundations || [];
+      this.onFoundation = opts.onFoundation || function () {};
+      this.listeners = {};
+      this.reset();
+    }
+
+    on(evt, fn) { (this.listeners[evt] = this.listeners[evt] || []).push(fn); return this; }
+    emit(evt, payload) { (this.listeners[evt] || []).forEach((f) => f(payload)); }
+
+    reset() {
+      const full = D.shuffle(D.buildDeck(this.playerId), this.rng);
+      // Nertz pile: 13 cards, top face up.
+      this.nertz = full.slice(0, 13);
+      this.nertz.forEach((c, i) => (c.faceUp = i === this.nertz.length - 1));
+      // Four work (tableau) piles, 1 card each, face up.
+      this.work = [[], [], [], []];
+      let idx = 13;
+      for (let i = 0; i < 4; i++) {
+        const c = full[idx++];
+        c.faceUp = true;
+        this.work[i].push(c);
+      }
+      // Remainder is the stock; waste starts empty.
+      this.stock = full.slice(idx);
+      this.stock.forEach((c) => (c.faceUp = false));
+      this.waste = [];
+      this.stockCycles = 0;
+      this.score = 0;            // running tally of foundation cards played
+      this.movesMade = 0;
+      this.finished = false;
+      this.emit("change");
+    }
+
+    // ---- accessors -------------------------------------------------------
+    nertzTop() { return this.nertz[this.nertz.length - 1] || null; }
+    wasteTop() { return this.waste[this.waste.length - 1] || null; }
+    workTop(i) { const p = this.work[i]; return p[p.length - 1] || null; }
+
+    // ---- stock -----------------------------------------------------------
+    flipStock() {
+      if (this.finished) return;
+      if (this.stock.length === 0) {
+        if (this.waste.length === 0) return;
+        // Recycle waste back into stock (face down), preserving order.
+        this.stock = this.waste.reverse();
+        this.stock.forEach((c) => (c.faceUp = false));
+        this.waste = [];
+        this.stockCycles++;
+      } else {
+        const n = Math.min(STOCK_FLIP, this.stock.length);
+        for (let i = 0; i < n; i++) {
+          const c = this.stock.pop();
+          c.faceUp = true;
+          this.waste.push(c);
+        }
+      }
+      this.emit("change");
+    }
+
+    // ---- foundation plays ------------------------------------------------
+    // source: {zone:'nertz'|'waste'|'work', pileIndex?}
+    playToFoundation(source) {
+      if (this.finished) return false;
+      // Only the top card of a work pile may go to a foundation — never a
+      // buried card (which would drag the cards above it off into the void).
+      if (source.zone === "work" && source.cardIndex != null) {
+        const p = this.work[source.pileIndex];
+        if (source.cardIndex !== p.length - 1) return false;
+      }
+      const card = this._peekSource(source);
+      if (!card) return false;
+
+      // Try to extend an existing foundation, else start one with an Ace.
+      let target = null;
+      for (const f of this.foundations) {
+        if (D.canStackFoundation(card, f)) { target = f; break; }
+      }
+      if (!target && card.rank === 1) {
+        target = { id: "f" + this.foundations.length + "_" + card.suit + Date.now(),
+                   suit: card.suit, symbol: card.symbol, color: card.color,
+                   top: 0, cards: [] };
+        this.foundations.push(target);
+      }
+      if (!target) return false;
+
+      this._removeSource(source);
+      card.owner = this.playerId;
+      card.faceUp = true;
+      target.cards.push(card);
+      target.top = card.rank;
+      this.score++;
+      this.movesMade++;
+      this.onFoundation(card);
+      this.emit("foundation", { card, foundation: target });
+      this._afterMove();
+      return true;
+    }
+
+    // ---- tableau plays ---------------------------------------------------
+    // Move a card (and any valid run above it for work piles) to work pile `dest`.
+    moveToWork(source, dest) {
+      if (this.finished) return false;
+      const destTop = this.workTop(dest);
+
+      if (source.zone === "work") {
+        const pile = this.work[source.pileIndex];
+        const start = source.cardIndex != null ? source.cardIndex : pile.length - 1;
+        const run = pile.slice(start);
+        if (!this._isValidRun(run)) return false;
+        if (!D.canStackTableau(run[0], destTop)) return false;
+        if (source.pileIndex === dest) return false;
+        pile.splice(start);
+        this.work[dest].push(...run);
+      } else {
+        const card = this._peekSource(source);
+        if (!card) return false;
+        if (!D.canStackTableau(card, destTop)) return false;
+        this._removeSource(source);
+        this.work[dest].push(card);
+      }
+      this.movesMade++;
+      this._afterMove();
+      return true;
+    }
+
+    _isValidRun(run) {
+      for (let i = 0; i < run.length - 1; i++) {
+        if (!D.canStackTableau(run[i + 1], run[i])) return false;
+      }
+      return run.every((c) => c.faceUp);
+    }
+
+    // ---- source helpers --------------------------------------------------
+    _peekSource(s) {
+      if (s.zone === "nertz") return this.nertzTop();
+      if (s.zone === "waste") return this.wasteTop();
+      if (s.zone === "work") {
+        const p = this.work[s.pileIndex];
+        const i = s.cardIndex != null ? s.cardIndex : p.length - 1;
+        return p[i] || null;
+      }
+      return null;
+    }
+
+    _removeSource(s) {
+      if (s.zone === "nertz") {
+        this.nertz.pop();
+        const t = this.nertzTop();
+        if (t) t.faceUp = true;
+      } else if (s.zone === "waste") {
+        this.waste.pop();
+      } else if (s.zone === "work") {
+        const p = this.work[s.pileIndex];
+        const i = s.cardIndex != null ? s.cardIndex : p.length - 1;
+        p.splice(i);
+      }
+    }
+
+    _afterMove() {
+      this.emit("change");
+      if (this.nertz.length === 0 && !this.finished) {
+        this.finished = true;
+        this.emit("nertz", { by: this.playerId }); // Nertz! round over
+      }
+    }
+
+    // Is there at least one legal move available? (used for "stuck" hints)
+    hasAnyMove() {
+      const sources = [];
+      if (this.nertzTop()) sources.push({ zone: "nertz" });
+      if (this.wasteTop()) sources.push({ zone: "waste" });
+      this.work.forEach((p, i) => { if (p.length) sources.push({ zone: "work", pileIndex: i }); });
+      for (const s of sources) {
+        const card = this._peekSource(s);
+        for (const f of this.foundations) if (D.canStackFoundation(card, f)) return true;
+        if (card.rank === 1) return true;
+        for (let d = 0; d < 4; d++) {
+          if (s.zone === "work" && s.pileIndex === d) continue;
+          if (D.canStackTableau(card, this.workTop(d))) return true;
+        }
+      }
+      return this.stock.length > 0 || this.waste.length > 0;
+    }
+
+    // Final Nertz score: +1 per foundation card, -2 per card left in nertz.
+    finalScore() {
+      const founded = this.foundations.reduce(
+        (n, f) => n + f.cards.filter((c) => c.owner === this.playerId).length, 0);
+      return founded - 2 * this.nertz.length;
+    }
+
+    nertzRemaining() { return this.nertz.length; }
+  }
+
+  Nertz.Engine = Engine;
+})(typeof window !== "undefined" ? window : this);
+
+</script>
+  <script>
+/* ai.js — lightweight Nertz bots that compete for the shared foundations.
+ * Each bot owns a real 52-card deck and greedily races to empty its Nertz pile,
+ * playing onto the same foundations the human uses. Bots have no visible
+ * tableau (abstracted), which keeps them fast while still creating real
+ * competition for foundation slots.
+ */
+(function (g) {
+  "use strict";
+  const Nertz = (g.Nertz = g.Nertz || {});
+  const D = Nertz.deck;
+
+  const PROFILES = {
+    easy:   { name: "Rookie",  tick: [1500, 2500], mistake: 0.45 },
+    normal: { name: "Sharp",   tick: [1000, 1800], mistake: 0.22 },
+    hard:   { name: "Ace",     tick: [650, 1200],  mistake: 0.07 },
+  };
+
+  const AVATARS = ["🦊", "🐼", "🦉", "🐙", "🦁", "🐢"];
+
+  class Bot {
+    constructor(opts) {
+      this.id = opts.id;
+      this.name = opts.name;
+      this.avatar = opts.avatar;
+      this.foundations = opts.foundations;
+      this.rng = opts.rng || Math.random;
+      this.profile = PROFILES[opts.difficulty] || PROFILES.normal;
+      this.onPlay = opts.onPlay || function () {};
+      // The bot owns a full 52-card deck. The first 13 are its Nertz pile
+      // (which it races to empty); the rest are its hand/stock. We model the
+      // whole deck as one reachable pool — a competent player can dig through
+      // their tableau & stock to reach any card over time — so the bot never
+      // deadlocks on Nertz ordering the way a top-only model would. Nertz
+      // cards are flagged so we can prioritise them and track the race.
+      const full = D.shuffle(D.buildDeck(this.id), this.rng);
+      this.pool = full.map((card, i) => ({ card, isNertz: i < 13 }));
+      this.nertzCount = 13;
+      this.active = false;
+      this._timer = null;
+      this.foundationCount = 0;
+    }
+
+    start() { this.active = true; this._schedule(); }
+    stop() { this.active = false; if (this._timer) clearTimeout(this._timer); }
+
+    _schedule() {
+      if (!this.active) return;
+      const [lo, hi] = this.profile.tick;
+      const delay = lo + this.rng() * (hi - lo);
+      this._timer = setTimeout(() => this._tick(), delay);
+    }
+
+    // Greedy scan of the pool for the best foundation play this instant.
+    // Prefers reducing the Nertz pile, then building higher foundations.
+    _bestPlay() {
+      let best = null;
+      for (let i = 0; i < this.pool.length; i++) {
+        const entry = this.pool[i];
+        const card = entry.card;
+        for (const f of this.foundations) {
+          if (D.canStackFoundation(card, f)) {
+            const w = (entry.isNertz ? 100 : 0) + f.top;
+            if (!best || w > best.w) best = { idx: i, entry, foundation: f, w };
+          }
+        }
+        if (card.rank === 1) { // can open a new foundation
+          const w = (entry.isNertz ? 100 : 0) + 1;
+          if (!best || w > best.w) best = { idx: i, entry, foundation: null, w };
+        }
+      }
+      return best;
+    }
+
+    _tick() {
+      if (!this.active) return;
+      const slip = this.rng() < this.profile.mistake; // sometimes "misses" a play
+      if (!slip) {
+        const play = this._bestPlay();
+        if (play) this._commit(play);
+      }
+      this._schedule();
+    }
+
+    _commit(play) {
+      const card = play.entry.card;
+      let target = play.foundation;
+      if (!target) {
+        target = { id: "f_" + this.id + "_" + card.suit + "_" + this.foundationCount,
+                   suit: card.suit, symbol: card.symbol, color: card.color,
+                   top: 0, cards: [] };
+        this.foundations.push(target);
+      }
+      card.owner = this.id;
+      card.faceUp = true; // cards on a foundation are always face-up
+      target.cards.push(card);
+      target.top = card.rank;
+      this.foundationCount++;
+
+      this.pool.splice(play.idx, 1);
+      if (play.entry.isNertz) this.nertzCount--;
+      this.onPlay({ bot: this, card, foundation: target });
+    }
+
+    nertzRemaining() { return this.nertzCount; }
+    finalScore() { return this.foundationCount - 2 * this.nertzCount; }
+  }
+
+  Nertz.PROFILES = PROFILES;
+  Nertz.AVATARS = AVATARS;
+  Nertz.Bot = Bot;
+})(typeof window !== "undefined" ? window : this);
+
+</script>
+  <script>
+/* storage.js — persistence for leaderboards, stats & progression.
+ * Uses localStorage; gracefully degrades to in-memory if unavailable.
+ */
+(function (g) {
+  "use strict";
+  const Nertz = (g.Nertz = g.Nertz || {});
+  const KEY = "nertz.save.v1";
+
+  const _mem = {};
+  const hasLS = (function () {
+    try { const k = "__nz"; localStorage.setItem(k, "1"); localStorage.removeItem(k); return true; }
+    catch (e) { return false; }
+  })();
+
+  function _read() {
+    if (!hasLS) return _mem.data ? JSON.parse(_mem.data) : null;
+    const raw = localStorage.getItem(KEY);
+    return raw ? JSON.parse(raw) : null;
+  }
+  function _write(obj) {
+    const s = JSON.stringify(obj);
+    if (hasLS) localStorage.setItem(KEY, s);
+    else _mem.data = s;
+  }
+
+  function defaults() {
+    return {
+      profile: { name: "You", xp: 0, level: 1, coins: 0 },
+      stats: {
+        gamesPlayed: 0, wins: 0, bestScore: -Infinity, bestTimeMs: null,
+        totalFoundationCards: 0, fastestNertzMs: null, streak: 0, bestStreak: 0,
+      },
+      achievements: {},        // id -> unlockedAt
+      leaderboard: [],         // [{name, score, mode, date, timeMs}]
+      daily: { lastSeed: null, lastResult: null },
+      settings: { sound: true, leftHanded: false, reduceMotion: false },
+    };
+  }
+
+  function load() {
+    const data = _read();
+    if (!data) { const d = defaults(); _write(d); return d; }
+    // shallow-merge defaults so new fields appear on upgrade
+    const base = defaults();
+    return Object.assign(base, data, {
+      profile: Object.assign(base.profile, data.profile),
+      stats: Object.assign(base.stats, data.stats),
+      settings: Object.assign(base.settings, data.settings),
+      achievements: data.achievements || {},
+      leaderboard: data.leaderboard || [],
+      daily: Object.assign(base.daily, data.daily),
+    });
+  }
+
+  function save(data) { _write(data); return data; }
+
+  function addLeaderboard(data, entry) {
+    data.leaderboard.push(entry);
+    data.leaderboard.sort((a, b) => b.score - a.score);
+    data.leaderboard = data.leaderboard.slice(0, 50);
+    return save(data);
+  }
+
+  function reset() {
+    if (hasLS) localStorage.removeItem(KEY);
+    _mem.data = null;
+    return load();
+  }
+
+  Nertz.store = { load, save, addLeaderboard, reset, hasLS };
+})(typeof window !== "undefined" ? window : this);
+
+</script>
+  <script>
+/* progression.js — XP, levels, achievements & rewards.
+ * Pure functions over a save object; the caller persists the result.
+ */
+(function (g) {
+  "use strict";
+  const Nertz = (g.Nertz = g.Nertz || {});
+
+  // XP required to reach level n (cumulative). Gentle early, steeper later.
+  function xpForLevel(level) { return Math.round(50 * Math.pow(level, 1.6)); }
+
+  function levelFromXp(xp) {
+    let lvl = 1;
+    while (xp >= xpForLevel(lvl + 1)) lvl++;
+    return lvl;
+  }
+
+  const ACHIEVEMENTS = [
+    { id: "first_blood",  name: "First Shuffle",   desc: "Finish your first game.",            icon: "🃏",
+      test: (s) => s.stats.gamesPlayed >= 1 },
+    { id: "nertz_caller", name: "Nertz!",          desc: "Empty your Nertz pile to win a round.", icon: "📣",
+      test: (s) => s.stats.wins >= 1 },
+    { id: "speed_demon",  name: "Speed Demon",     desc: "Win a round in under 90 seconds.",   icon: "⚡",
+      test: (s) => s.stats.fastestNertzMs != null && s.stats.fastestNertzMs < 90000 },
+    { id: "century",      name: "Century Club",    desc: "Play 100 foundation cards total.",   icon: "💯",
+      test: (s) => s.stats.totalFoundationCards >= 100 },
+    { id: "hot_streak",   name: "Hot Streak",      desc: "Win 3 rounds in a row.",             icon: "🔥",
+      test: (s) => s.stats.bestStreak >= 3 },
+    { id: "high_roller",  name: "High Roller",     desc: "Score 40+ in a single round.",       icon: "🎯",
+      test: (s) => s.stats.bestScore >= 40 },
+    { id: "marathon",     name: "Marathoner",      desc: "Play 25 games.",                     icon: "🏃",
+      test: (s) => s.stats.gamesPlayed >= 25 },
+    { id: "ace_slayer",   name: "Ace Slayer",      desc: "Beat the 'Ace' difficulty bots.",    icon: "👑",
+      test: (s) => !!s._flags && s._flags.beatHard },
+  ];
+
+  // Award XP & coins, recompute level, and surface any level-ups.
+  function grantRewards(save, { xp, coins }) {
+    const before = save.profile.level;
+    save.profile.xp += xp || 0;
+    save.profile.coins += coins || 0;
+    save.profile.level = levelFromXp(save.profile.xp);
+    return { leveledUp: save.profile.level > before, from: before, to: save.profile.level };
+  }
+
+  // Check all achievements; return the list newly unlocked this call.
+  function checkAchievements(save) {
+    const now = Date.now();
+    const unlocked = [];
+    for (const a of ACHIEVEMENTS) {
+      if (!save.achievements[a.id] && a.test(save)) {
+        save.achievements[a.id] = now;
+        unlocked.push(a);
+      }
+    }
+    return unlocked;
+  }
+
+  // Translate an end-of-round result into XP/coins.
+  function scoreToRewards(result) {
+    // result: { score, won, foundationCards, timeMs, difficulty }
+    let xp = Math.max(0, result.foundationCards) * 4;
+    if (result.won) xp += 50;
+    if (result.difficulty === "hard") xp = Math.round(xp * 1.5);
+    else if (result.difficulty === "normal") xp = Math.round(xp * 1.2);
+    const coins = Math.max(0, result.score) + (result.won ? 10 : 0);
+    return { xp, coins };
+  }
+
+  Nertz.progression = {
+    xpForLevel, levelFromXp, ACHIEVEMENTS,
+    grantRewards, checkAchievements, scoreToRewards,
+  };
+})(typeof window !== "undefined" ? window : this);
+
+</script>
+  <script>
+/* ui.js — rendering, pointer interaction (drag + tap), overlays & FX. */
+(function (g) {
+  "use strict";
+  const Nertz = (g.Nertz = g.Nertz || {});
+  const D = Nertz.deck;
+
+  const $ = (sel, root) => (root || document).querySelector(sel);
+  const el = (tag, cls, txt) => {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (txt != null) e.textContent = txt;
+    return e;
+  };
+
+  // ---- card element ------------------------------------------------------
+  function cardEl(card, opts) {
+    opts = opts || {};
+    const e = el("div", "card");
+    if (!card.faceUp) { e.classList.add("face-down"); return e; }
+    if (card.color === "red") e.classList.add("red");
+    e.dataset.cardId = card.id;
+    const tl = el("div", "corner tl");
+    tl.append(el("span", "c-rank", card.label), el("span", "c-suit", card.symbol));
+    const br = el("div", "corner br");
+    br.append(el("span", "c-rank", card.label), el("span", "c-suit", card.symbol));
+    const center = el("div", "pip-center", card.symbol);
+    e.append(tl, center, br);
+    return e;
+  }
+
+  class UI {
+    constructor() {
+      this.api = {};                 // handlers wired by main.js
+      this.drag = null;
+      this.refs = {
+        foundations: $("#foundations"),
+        nertzSlot: $("#nertzSlot"),
+        stockSlot: $("#stockSlot"),
+        wasteSlot: $("#wasteSlot"),
+        workRow: $("#workRow"),
+        oppStrip: $("#oppStrip"),
+        fx: $("#fxLayer"),
+        toast: $("#toastHost"),
+      };
+      this._bindPointer();
+    }
+
+    setApi(api) { this.api = api; }
+
+    // ============ RENDER ============
+    render(engine) {
+      this._renderNertz(engine);
+      this._renderStock(engine);
+      this._renderWaste(engine);
+      this._renderWork(engine);
+      this._renderFoundations(engine.foundations);
+    }
+
+    _renderNertz(engine) {
+      const slot = this.refs.nertzSlot;
+      slot.querySelectorAll(".card, .nertz-count").forEach((n) => n.remove());
+      const top = engine.nertzTop();
+      if (top) {
+        const c = cardEl(top);
+        this._makeDraggable(c, { zone: "nertz" });
+        slot.appendChild(c);
+        const badge = el("div", "nertz-count", String(engine.nertz.length));
+        slot.appendChild(badge);
+      }
+    }
+
+    _renderStock(engine) {
+      const slot = this.refs.stockSlot;
+      slot.querySelectorAll(".card").forEach((n) => n.remove());
+      if (engine.stock.length) {
+        const back = el("div", "card face-down");
+        slot.appendChild(back);
+      }
+      slot.onclick = () => this.api.flipStock && this.api.flipStock();
+    }
+
+    _renderWaste(engine) {
+      const slot = this.refs.wasteSlot;
+      slot.querySelectorAll(".card").forEach((n) => n.remove());
+      const top = engine.wasteTop();
+      if (top) {
+        const c = cardEl(top);
+        this._makeDraggable(c, { zone: "waste" });
+        slot.appendChild(c);
+      }
+    }
+
+    _renderWork(engine) {
+      const row = this.refs.workRow;
+      row.innerHTML = "";
+      const overlap = 26;
+      engine.work.forEach((pile, i) => {
+        const slot = el("div", "pile-slot");
+        slot.dataset.zone = "work";
+        slot.dataset.pileIndex = i;
+        const stack = el("div", "work-pile");
+        stack.style.height = (pile.length ? (pile.length - 1) * overlap : 0) + 106 + "px";
+        pile.forEach((card, j) => {
+          const c = cardEl(card);
+          c.style.top = j * overlap + "px";
+          if (card.faceUp) this._makeDraggable(c, { zone: "work", pileIndex: i, cardIndex: j });
+          stack.appendChild(c);
+        });
+        slot.appendChild(stack);
+        if (!pile.length) slot.appendChild(el("div", "pile-label", "Work"));
+        row.appendChild(slot);
+      });
+    }
+
+    _renderFoundations(foundations) {
+      const host = this.refs.foundations;
+      host.innerHTML = "";
+      // Always show existing foundations + a couple of empty target slots.
+      foundations.forEach((f) => {
+        const slot = el("div", "pile-slot foundation-slot");
+        slot.dataset.zone = "foundation";
+        slot.dataset.foundationId = f.id;
+        const topCard = f.cards[f.cards.length - 1];
+        if (topCard) slot.appendChild(cardEl(topCard));
+        host.appendChild(slot);
+      });
+      // empty ace-starting slots
+      const empties = Math.max(1, 4 - foundations.length);
+      for (let i = 0; i < empties; i++) {
+        const slot = el("div", "pile-slot foundation-slot");
+        slot.dataset.zone = "foundation";
+        slot.dataset.foundationId = "new";
+        slot.appendChild(el("div", "pile-label", "Ace"));
+        host.appendChild(slot);
+      }
+    }
+
+    renderOpponents(bots, leaderId) {
+      const host = this.refs.oppStrip;
+      host.innerHTML = "";
+      bots.forEach((b) => {
+        const o = el("div", "opp");
+        if (b.id === leaderId) o.classList.add("lead");
+        const ava = el("div", "opp-ava", b.avatar);
+        const meta = el("div", "opp-meta");
+        meta.append(
+          el("div", "opp-name", b.name),
+          (() => { const n = el("div", "opp-nertz"); n.innerHTML = `Nertz <b>${b.nertzRemaining()}</b>`; return n; })()
+        );
+        const pip = el("div", "opp-pip");
+        const fill = el("span");
+        fill.style.width = Math.round((b.nertzRemaining() / 13) * 100) + "%";
+        pip.appendChild(fill);
+        meta.appendChild(pip);
+        o.append(ava, meta);
+        host.appendChild(o);
+      });
+    }
+
+    // ============ POINTER (drag + tap) ============
+    _makeDraggable(elm, source) { elm._source = source; elm.classList.add("draggable"); }
+
+    _bindPointer() {
+      const onDown = (e) => {
+        const card = e.target.closest(".card.draggable");
+        if (!card || !card._source) return;
+        const pt = e.touches ? e.touches[0] : e;
+        this.drag = {
+          source: card._source, origin: card,
+          startX: pt.clientX, startY: pt.clientY,
+          moved: false, clone: null, offX: 0, offY: 0,
+        };
+        const r = card.getBoundingClientRect();
+        this.drag.offX = pt.clientX - r.left;
+        this.drag.offY = pt.clientY - r.top;
+        this.drag.rect = r;
+      };
+
+      const onMove = (e) => {
+        if (!this.drag) return;
+        const pt = e.touches ? e.touches[0] : e;
+        const dx = pt.clientX - this.drag.startX, dy = pt.clientY - this.drag.startY;
+        if (!this.drag.moved && Math.hypot(dx, dy) < 6) return;
+        if (e.cancelable) e.preventDefault();
+        if (!this.drag.moved) {
+          this.drag.moved = true;
+          const clone = this.drag.origin.cloneNode(true);
+          clone.classList.add("dragging");
+          clone.style.position = "fixed";
+          clone.style.pointerEvents = "none";
+          clone.style.width = this.drag.rect.width + "px";
+          clone.style.height = this.drag.rect.height + "px";
+          clone.style.left = "0"; clone.style.top = "0";
+          clone.style.zIndex = 9999;
+          document.body.appendChild(clone);
+          this.drag.clone = clone;
+          this.drag.origin.style.opacity = "0.35";
+        }
+        this.drag.clone.style.transform =
+          `translate(${pt.clientX - this.drag.offX}px, ${pt.clientY - this.drag.offY}px)`;
+        this._highlightDrop(pt.clientX, pt.clientY);
+      };
+
+      const onUp = (e) => {
+        if (!this.drag) return;
+        const d = this.drag;
+        this.drag = null;
+        document.querySelectorAll(".drop-ok,.drop-bad").forEach((n) => n.classList.remove("drop-ok", "drop-bad"));
+        if (d.clone) d.clone.remove();
+        if (d.origin) d.origin.style.opacity = "";
+
+        if (!d.moved) { // a tap → quick play to foundation
+          this.api.tap && this.api.tap(d.source);
+          return;
+        }
+        const pt = e.changedTouches ? e.changedTouches[0] : e;
+        const target = this._dropTargetAt(pt.clientX, pt.clientY);
+        if (target) this.api.drop && this.api.drop(d.source, target);
+      };
+
+      document.addEventListener("mousedown", onDown);
+      document.addEventListener("mousemove", onMove);
+      document.addEventListener("mouseup", onUp);
+      document.addEventListener("touchstart", onDown, { passive: false });
+      document.addEventListener("touchmove", onMove, { passive: false });
+      document.addEventListener("touchend", onUp);
+    }
+
+    _dropTargetAt(x, y) {
+      const node = document.elementFromPoint(x, y);
+      if (!node) return null;
+      const slot = node.closest("[data-zone='foundation'],[data-zone='work']");
+      if (!slot) return null;
+      if (slot.dataset.zone === "foundation")
+        return { zone: "foundation", foundationId: slot.dataset.foundationId };
+      return { zone: "work", pileIndex: parseInt(slot.dataset.pileIndex, 10) };
+    }
+
+    _highlightDrop(x, y) {
+      document.querySelectorAll(".drop-ok").forEach((n) => n.classList.remove("drop-ok"));
+      const node = document.elementFromPoint(x, y);
+      const slot = node && node.closest("[data-zone='foundation'],[data-zone='work']");
+      if (slot) slot.classList.add("drop-ok");
+    }
+
+    // ============ FX ============
+    toast(msg, gold) {
+      const t = el("div", "toast" + (gold ? " gold" : ""));
+      t.textContent = msg;
+      this.refs.toast.appendChild(t);
+      setTimeout(() => { t.style.opacity = "0"; t.style.transform = "translateY(8px)"; t.style.transition = ".3s"; }, 1600);
+      setTimeout(() => t.remove(), 2000);
+    }
+
+    confetti() {
+      if (document.body.classList.contains("reduce-motion")) return;
+      const colors = ["#f5c451", "#38e0a6", "#e2545b", "#5aa9e6", "#fff"];
+      const host = this.refs.fx;
+      for (let i = 0; i < 90; i++) {
+        const c = el("div", "confetti");
+        c.style.background = colors[i % colors.length];
+        c.style.left = Math.random() * 100 + "vw";
+        c.style.top = "-20px";
+        const dur = 1400 + Math.random() * 1400;
+        const x = (Math.random() - 0.5) * 220;
+        host.appendChild(c);
+        c.animate(
+          [
+            { transform: `translate(0,0) rotate(0deg)`, opacity: 1 },
+            { transform: `translate(${x}px, ${window.innerHeight + 60}px) rotate(${Math.random() * 720}deg)`, opacity: 0.9 },
+          ],
+          { duration: dur, easing: "cubic-bezier(.2,.6,.3,1)" }
+        ).onfinish = () => c.remove();
+      }
+    }
+
+    // briefly highlight any cards that can be played (hint)
+    flashHints(cards) {
+      cards.forEach((id) => {
+        const node = document.querySelector(`[data-card-id='${id}']`);
+        if (node) {
+          node.classList.add("playable-hint");
+          setTimeout(() => node.classList.remove("playable-hint"), 1800);
+        }
+      });
+    }
+  }
+
+  Nertz.UI = UI;
+  Nertz.h = { el, $, cardEl };
+})(typeof window !== "undefined" ? window : this);
+
+</script>
+  <script>
+/* main.js — app orchestration: menu, modes, game loop, progression, panels. */
+(function (g) {
+  "use strict";
+  const Nertz = g.Nertz;
+  const D = Nertz.deck;
+  const { el, $ } = Nertz.h;
+  const prog = Nertz.progression;
+
+  const App = {
+    save: null,
+    ui: null,
+    engine: null,
+    bots: [],
+    foundations: [],
+    mode: "fast",
+    cfg: { opponents: 2, difficulty: "normal" },
+    timer: null,
+    startTime: 0,
+    running: false,
+  };
+
+  // ============ boot ============
+  function boot() {
+    App.save = Nertz.store.load();
+    App.ui = new Nertz.UI();
+    App.ui.setApi({
+      tap: onTap, drop: onDrop, flipStock: onFlipStock,
+    });
+    applySettings();
+    refreshLevelChip();
+    wireMenu();
+    wireNav();
+    wireGameHud();
+    wireResult();
+  }
+
+  function applySettings() {
+    const s = App.save.settings;
+    document.body.classList.toggle("left-handed", !!s.leftHanded);
+    document.body.classList.toggle("reduce-motion", !!s.reduceMotion);
+  }
+
+  function refreshLevelChip() {
+    const p = App.save.profile;
+    $("#lvlBadge").textContent = p.level;
+    $("#coins").textContent = p.coins + " ◈";
+    const cur = prog.xpForLevel(p.level), next = prog.xpForLevel(p.level + 1);
+    const pct = Math.max(0, Math.min(100, ((p.xp - cur) / (next - cur)) * 100));
+    $("#lvlBarFill").style.width = pct + "%";
+  }
+
+  // ============ menu ============
+  function wireMenu() {
+    document.querySelectorAll(".mode-card").forEach((btn) =>
+      btn.addEventListener("click", () => startGame(btn.dataset.mode)));
+    wireSeg("#cfgOpponents", (v) => (App.cfg.opponents = parseInt(v, 10)));
+    wireSeg("#cfgDifficulty", (v) => (App.cfg.difficulty = v));
+  }
+
+  function wireSeg(sel, onChange) {
+    const seg = $(sel);
+    seg.querySelectorAll("button").forEach((b) =>
+      b.addEventListener("click", () => {
+        seg.querySelectorAll("button").forEach((x) => x.classList.remove("on"));
+        b.classList.add("on");
+        seg.dataset.val = b.dataset.v;
+        onChange(b.dataset.v);
+      }));
+  }
+
+  function showScreen(which) {
+    $("#screenMenu").classList.toggle("active", which === "menu");
+    $("#screenGame").classList.toggle("active", which === "game");
+  }
+
+  // ============ game lifecycle ============
+  function startGame(mode) {
+    App.mode = mode;
+    App.foundations = [];
+    const isZen = mode === "zen";
+    const isDaily = mode === "daily";
+
+    let rng = Math.random;
+    if (isDaily) {
+      const seed = dailySeed();
+      if (App.save.daily.lastSeed === seed && App.save.daily.lastResult) {
+        App.ui.toast("Daily already played — replaying for fun ✦");
+      }
+      rng = D.seededRng(seed);
+    }
+
+    // engine for the human
+    App.engine = new Nertz.Engine({
+      rng, playerId: "you", foundations: App.foundations,
+      onFoundation: () => {},
+    });
+    App.engine.on("change", () => syncHud());
+    App.engine.on("foundation", () => { App.ui.render(App.engine); pulseLeader(); });
+    App.engine.on("nertz", () => endRound("you"));
+
+    // bots
+    App.bots = [];
+    if (!isZen) {
+      const n = isDaily ? 2 : App.cfg.opponents;
+      const diff = isDaily ? "normal" : App.cfg.difficulty;
+      for (let i = 0; i < n; i++) {
+        const bot = new Nertz.Bot({
+          id: "bot" + i,
+          name: Nertz.PROFILES[diff].name + " " + (i + 1),
+          avatar: Nertz.AVATARS[i % Nertz.AVATARS.length],
+          difficulty: diff,
+          foundations: App.foundations,
+          rng: isDaily ? D.seededRng(dailySeed() + 7919 * (i + 1)) : Math.random,
+          onPlay: onBotPlay,
+        });
+        App.bots.push(bot);
+      }
+    }
+
+    showScreen("game");
+    App.ui.render(App.engine);
+    App.ui.renderOpponents(App.bots, leaderId());
+    syncHud();
+
+    App.startTime = Date.now();
+    App.running = true;
+    clearInterval(App.timer);
+    App.timer = setInterval(tickClock, 250);
+    // stagger bot starts so the player gets a head start
+    App.bots.forEach((b, i) => setTimeout(() => b.start(), 900 + i * 350));
+  }
+
+  function onBotPlay(ev) {
+    if (!App.running) return;
+    App.ui.render(App.engine);
+    App.ui.renderOpponents(App.bots, leaderId());
+    pulseLeader();
+    if (ev.bot.nertzRemaining() === 0) endRound(ev.bot.id);
+  }
+
+  function leaderId() {
+    let best = { id: "you", n: App.engine ? App.engine.nertzRemaining() : 13 };
+    App.bots.forEach((b) => { if (b.nertzRemaining() < best.n) best = { id: b.id, n: b.nertzRemaining() }; });
+    return best.id;
+  }
+  function pulseLeader() { App.ui.renderOpponents(App.bots, leaderId()); }
+
+  function tickClock() {
+    if (!App.running) return;
+    const ms = Date.now() - App.startTime;
+    $("#hudTime").textContent = fmtTime(ms);
+  }
+
+  function syncHud() {
+    if (!App.engine) return;
+    // During play we show cards banked to foundations (counts up, motivating).
+    // The net Nertz score (banked − 2×remaining) is computed at round end.
+    $("#hudScore").textContent = App.engine.score;
+    $("#hudNertz").textContent = App.engine.nertzRemaining();
+  }
+
+  // ============ interaction handlers ============
+  function onTap(source) {
+    if (!App.running) return;
+    if (App.engine.playToFoundation(source)) {
+      App.ui.render(App.engine); syncHud(); beep(660);
+    }
+  }
+  function onDrop(source, target) {
+    if (!App.running) return;
+    let ok = false;
+    if (target.zone === "foundation") ok = App.engine.playToFoundation(source);
+    else if (target.zone === "work") ok = App.engine.moveToWork(source, target.pileIndex);
+    if (ok) { App.ui.render(App.engine); syncHud(); beep(target.zone === "foundation" ? 660 : 520); }
+  }
+  function onFlipStock() {
+    if (!App.running) return;
+    App.engine.flipStock();
+    App.ui.render(App.engine);
+    beep(420);
+  }
+
+  // ============ end of round ============
+  function endRound(winnerId) {
+    if (!App.running) return;
+    App.running = false;
+    clearInterval(App.timer);
+    App.bots.forEach((b) => b.stop());
+    const timeMs = Date.now() - App.startTime;
+
+    // gather standings
+    const players = [{
+      id: "you", name: App.save.profile.name || "You", avatar: "🧑",
+      score: App.engine.finalScore(),
+      founded: App.foundations.reduce((n, f) => n + f.cards.filter((c) => c.owner === "you").length, 0),
+      nertz: App.engine.nertzRemaining(), isYou: true,
+    }];
+    App.bots.forEach((b) => players.push({
+      id: b.id, name: b.name, avatar: b.avatar,
+      score: b.finalScore(), founded: b.foundationCount, nertz: b.nertzRemaining(), isYou: false,
+    }));
+    players.sort((a, b) => b.score - a.score);
+
+    const me = players.find((p) => p.isYou);
+    const youWon = winnerId === "you" || (App.mode === "zen" && me.nertz === 0);
+    const beatHard = youWon && App.cfg.difficulty === "hard" && App.mode !== "zen";
+
+    updateProgress(me, youWon, timeMs, beatHard);
+    showResult(players, me, youWon, timeMs);
+  }
+
+  function updateProgress(me, won, timeMs, beatHard) {
+    const s = App.save.stats;
+    s.gamesPlayed++;
+    s.totalFoundationCards += me.founded;
+    if (me.score > s.bestScore) s.bestScore = me.score;
+    if (won) {
+      s.wins++; s.streak++; s.bestStreak = Math.max(s.bestStreak, s.streak);
+      if (s.fastestNertzMs == null || timeMs < s.fastestNertzMs) s.fastestNertzMs = timeMs;
+      if (s.bestTimeMs == null || timeMs < s.bestTimeMs) s.bestTimeMs = timeMs;
+    } else { s.streak = 0; }
+    App.save._flags = Object.assign(App.save._flags || {}, { beatHard: (App.save._flags && App.save._flags.beatHard) || beatHard });
+
+    // Zen is pure practice: stats & achievements still count, but no XP/coins.
+    if (App.mode === "zen") {
+      App._rewards = { xp: 0, coins: 0 };
+      App._levelUp = { leveledUp: false };
+    } else {
+      App._rewards = prog.scoreToRewards({
+        score: me.score, won, foundationCards: me.founded, timeMs, difficulty: App.cfg.difficulty,
+      });
+      App._levelUp = prog.grantRewards(App.save, App._rewards);
+    }
+    App._unlocked = prog.checkAchievements(App.save);
+
+    // leaderboard + ranked persistence
+    if (App.mode !== "zen") {
+      Nertz.store.addLeaderboard(App.save, {
+        name: App.save.profile.name || "You", score: me.score, mode: App.mode,
+        date: new Date().toISOString().slice(0, 10), timeMs,
+      });
+    }
+    if (App.mode === "daily") {
+      App.save.daily.lastSeed = dailySeed();
+      App.save.daily.lastResult = { score: me.score, won };
+    }
+    Nertz.store.save(App.save);
+    refreshLevelChip();
+  }
+
+  function showResult(players, me, won, timeMs) {
+    $("#resultEmoji").textContent = won ? "🏆" : (me.score > 0 ? "🃏" : "😅");
+    $("#resultTitle").textContent = won ? "Nertz! You win!" : standingLabel(players, me);
+
+    const table = $("#resultTable");
+    table.innerHTML = "";
+    players.forEach((p, i) => {
+      const row = el("div", "res-row" + (p.isYou ? " me" : ""));
+      const name = el("div", "res-name");
+      name.append(el("span", "res-rank", "#" + (i + 1)), document.createTextNode(p.avatar + " " + p.name));
+      const score = el("div", "res-score", (p.score >= 0 ? "+" : "") + p.score);
+      row.append(name, score);
+      table.appendChild(row);
+    });
+
+    const rr = $("#rewardRow");
+    rr.innerHTML = "";
+    if (App.mode !== "zen") {
+      rr.append(
+        pill("xp", "+" + App._rewards.xp + " XP"),
+        pill("coin", "+" + App._rewards.coins + " ◈"),
+        pill("", "⏱ " + fmtTime(timeMs))
+      );
+    } else {
+      rr.append(pill("", "⏱ " + fmtTime(timeMs)), pill("", me.founded + " to foundations"));
+    }
+
+    $("#overlayRound").classList.add("show");
+
+    if (won) App.ui.confetti();
+    if (App._levelUp.leveledUp) setTimeout(() => App.ui.toast("Level up! You reached level " + App._levelUp.to + " 🎉", true), 500);
+    (App._unlocked || []).forEach((a, i) =>
+      setTimeout(() => App.ui.toast(a.icon + "  Unlocked: " + a.name, true), 900 + i * 700));
+  }
+
+  function pill(kind, txt) { return el("span", "reward-pill " + kind, txt); }
+  function standingLabel(players, me) {
+    const rank = players.indexOf(me) + 1;
+    return rank === 1 ? "You topped the table!" : "You placed #" + rank;
+  }
+
+  function wireResult() {
+    $("#resultAgain").addEventListener("click", () => { $("#overlayRound").classList.remove("show"); startGame(App.mode); });
+    $("#resultMenu").addEventListener("click", () => { $("#overlayRound").classList.remove("show"); backToMenu(); });
+  }
+
+  function backToMenu() {
+    App.running = false;
+    clearInterval(App.timer);
+    App.bots.forEach((b) => b.stop());
+    showScreen("menu");
+  }
+
+  // ============ game hud buttons ============
+  function wireGameHud() {
+    $("#btnQuit").addEventListener("click", backToMenu);
+    $("#btnHint").addEventListener("click", showHint);
+    $("#btnAuto").addEventListener("click", autoPlay);
+    $("#btnRestart").addEventListener("click", () => startGame(App.mode));
+    wireKeyboard();
+  }
+
+  // Sweep every currently-playable top card to the foundations, repeatedly,
+  // until nothing else fits. A common solitaire quality-of-life feature.
+  function autoPlay() {
+    if (!App.running) return;
+    let moved = true, total = 0;
+    while (moved && App.running) {
+      moved = false;
+      const tries = [{ zone: "nertz" }, { zone: "waste" }];
+      for (let i = 0; i < 4; i++) tries.push({ zone: "work", pileIndex: i, cardIndex: App.engine.work[i].length - 1 });
+      for (const s of tries) if (App.engine.playToFoundation(s)) { moved = true; total++; }
+    }
+    if (total) { App.ui.render(App.engine); syncHud(); beep(720); App.ui.toast("Auto-played " + total + " card" + (total > 1 ? "s" : "") + " ⤴"); }
+    else App.ui.toast("Nothing to auto-play right now");
+  }
+
+  function anyOverlayOpen() {
+    return $("#overlayRound").classList.contains("show") || $("#overlayPanel").classList.contains("show");
+  }
+
+  function wireKeyboard() {
+    if (App._kbBound) return; // bind once
+    App._kbBound = true;
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && anyOverlayOpen()) {
+        $("#overlayRound").classList.remove("show");
+        $("#overlayPanel").classList.remove("show");
+        return;
+      }
+      if (!App.running || anyOverlayOpen()) return;
+      switch (e.key) {
+        case " ": case "f": case "F": e.preventDefault(); onFlipStock(); break;
+        case "a": case "A": autoPlay(); break;
+        case "h": case "H": showHint(); break;
+        case "r": case "R": startGame(App.mode); break;
+        case "Escape": backToMenu(); break;
+      }
+    });
+  }
+
+  function showHint() {
+    if (!App.running) return;
+    const e = App.engine;
+    const ids = [];
+    const consider = [];
+    if (e.nertzTop()) consider.push({ c: e.nertzTop() });
+    if (e.wasteTop()) consider.push({ c: e.wasteTop() });
+    e.work.forEach((p) => { if (p.length) consider.push({ c: p[p.length - 1] }); });
+    consider.forEach(({ c }) => {
+      let playable = c.rank === 1;
+      for (const f of e.foundations) if (D.canStackFoundation(c, f)) playable = true;
+      if (playable) ids.push(c.id);
+    });
+    if (ids.length) { App.ui.flashHints(ids); App.ui.toast(ids.length + " card(s) can go to a foundation 💡"); }
+    else App.ui.toast("No foundation plays — flip the stock 🔄");
+  }
+
+  // ============ nav / panels ============
+  function wireNav() {
+    $("#navStats").addEventListener("click", () => openPanel("stats"));
+    $("#navBoard").addEventListener("click", () => openPanel("board"));
+    $("#navSettings").addEventListener("click", () => openPanel("settings"));
+    $("#panelClose").addEventListener("click", () => $("#overlayPanel").classList.remove("show"));
+    document.querySelectorAll(".ptab").forEach((t) =>
+      t.addEventListener("click", () => {
+        document.querySelectorAll(".ptab").forEach((x) => x.classList.remove("on"));
+        t.classList.add("on");
+        renderPanel(t.dataset.tab);
+      }));
+  }
+
+  function openPanel(tab) {
+    document.querySelectorAll(".ptab").forEach((x) => x.classList.toggle("on", x.dataset.tab === tab));
+    renderPanel(tab);
+    $("#overlayPanel").classList.add("show");
+  }
+
+  function renderPanel(tab) {
+    const body = $("#panelBody");
+    body.innerHTML = "";
+    if (tab === "stats") body.appendChild(renderStats());
+    else if (tab === "ach") body.appendChild(renderAchievements());
+    else if (tab === "board") body.appendChild(renderBoard());
+    else if (tab === "settings") body.appendChild(renderSettings());
+  }
+
+  function renderStats() {
+    const s = App.save.stats, wrap = el("div");
+    const grid = el("div", "stat-grid");
+    const winRate = s.gamesPlayed ? Math.round((s.wins / s.gamesPlayed) * 100) : 0;
+    const box = (k, v) => { const b = el("div", "stat-box"); b.append(el("div", "sb-v", v), el("div", "sb-k", k)); return b; };
+    grid.append(
+      box("Games", s.gamesPlayed),
+      box("Wins", s.wins),
+      box("Win rate", winRate + "%"),
+      box("Best score", s.bestScore === -Infinity ? "—" : s.bestScore),
+      box("Best streak", s.bestStreak),
+      box("Fastest win", s.fastestNertzMs ? fmtTime(s.fastestNertzMs) : "—"),
+    );
+    wrap.appendChild(grid);
+    return wrap;
+  }
+
+  function renderAchievements() {
+    const list = el("div", "ach-list");
+    prog.ACHIEVEMENTS.forEach((a) => {
+      const unlocked = !!App.save.achievements[a.id];
+      const row = el("div", "ach" + (unlocked ? "" : " locked"));
+      const ic = el("div", "ach-ic", unlocked ? a.icon : "🔒");
+      const meta = el("div");
+      meta.append(el("div", "ach-name", a.name), el("div", "ach-desc", a.desc));
+      row.append(ic, meta);
+      list.appendChild(row);
+    });
+    return list;
+  }
+
+  function renderBoard() {
+    const board = App.save.leaderboard || [];
+    if (!board.length) { const e = el("div", "board-empty", "No scores yet — play a ranked race!"); return e; }
+    const list = el("div", "board-list");
+    board.slice(0, 15).forEach((entry, i) => {
+      const row = el("div", "res-row");
+      const name = el("div", "res-name");
+      name.append(el("span", "res-rank", "#" + (i + 1)),
+        document.createTextNode(entry.name + "  ·  " + entry.mode));
+      row.append(name, el("div", "res-score", (entry.score >= 0 ? "+" : "") + entry.score));
+      list.appendChild(row);
+    });
+    return list;
+  }
+
+  function renderSettings() {
+    const wrap = el("div");
+    const toggle = (label, key) => {
+      const row = el("div", "set-row");
+      row.append(el("span", null, label));
+      const sw = el("button", "switch" + (App.save.settings[key] ? " on" : ""));
+      sw.addEventListener("click", () => {
+        App.save.settings[key] = !App.save.settings[key];
+        sw.classList.toggle("on", App.save.settings[key]);
+        Nertz.store.save(App.save);
+        applySettings();
+      });
+      row.appendChild(sw);
+      return row;
+    };
+    wrap.append(
+      toggle("Sound effects", "sound"),
+      toggle("Left-handed layout", "leftHanded"),
+      toggle("Reduce motion", "reduceMotion"),
+    );
+    const reset = el("button", "danger-link", "Reset all progress");
+    reset.addEventListener("click", () => {
+      if (confirm("Erase all stats, levels and leaderboard?")) {
+        App.save = Nertz.store.reset();
+        applySettings(); refreshLevelChip(); renderPanel("settings");
+        App.ui.toast("Progress reset.");
+      }
+    });
+    wrap.appendChild(reset);
+    return wrap;
+  }
+
+  // ============ helpers ============
+  function fmtTime(ms) {
+    const s = Math.floor(ms / 1000);
+    return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
+  }
+  function dailySeed() {
+    const d = new Date();
+    return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+  }
+
+  // tiny WebAudio blip (respects sound setting)
+  let _actx = null;
+  function beep(freq) {
+    if (!App.save.settings.sound) return;
+    try {
+      _actx = _actx || new (window.AudioContext || window.webkitAudioContext)();
+      const o = _actx.createOscillator(), gnode = _actx.createGain();
+      o.frequency.value = freq; o.type = "sine";
+      gnode.gain.value = 0.04;
+      o.connect(gnode); gnode.connect(_actx.destination);
+      o.start();
+      gnode.gain.exponentialRampToValueAtTime(0.0001, _actx.currentTime + 0.12);
+      o.stop(_actx.currentTime + 0.13);
+    } catch (e) { /* no audio */ }
+  }
+
+  g.NertzApp = App; // debug handle (inspect game state from the console)
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
+  else boot();
+})(typeof window !== "undefined" ? window : this);
+
+</script>
+</body>
+</html>

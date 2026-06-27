@@ -1,0 +1,41 @@
+{
+  "name": "nertz-royale",
+  "version": "1.0.0",
+  "description": "Nertz Royale — fast-play solitaire racing, as a desktop app.",
+  "author": "Nertz Royale",
+  "license": "MIT",
+  "main": "electron-main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --mac dmg",
+    "dist:win": "electron-builder --win nsis",
+    "dist:linux": "electron-builder --linux AppImage",
+    "dist:all": "electron-builder -mwl"
+  },
+  "build": {
+    "appId": "com.nertzroyale.app",
+    "productName": "Nertz Royale",
+    "files": [
+      "electron-main.js",
+      "index.html",
+      "css/**/*",
+      "js/**/*",
+      "build/icon.*"
+    ],
+    "mac": {
+      "target": ["dmg"],
+      "category": "public.app-category.games",
+      "icon": "build/icon.png"
+    },
+    "dmg": {
+      "title": "Nertz Royale",
+      "backgroundColor": "#0a3526"
+    },
+    "win": { "target": ["nsis"], "icon": "build/icon.png" },
+    "linux": { "target": ["AppImage"], "category": "Game", "icon": "build/icon.png" }
+  },
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3"
+  }
+}
