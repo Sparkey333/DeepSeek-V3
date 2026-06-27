@@ -27,7 +27,7 @@
     return {
       profile: { name: "You", xp: 0, level: 1, coins: 0 },
       stats: {
-        gamesPlayed: 0, wins: 0, bestScore: -Infinity, bestTimeMs: null,
+        gamesPlayed: 0, wins: 0, bestScore: null, bestTimeMs: null,
         totalFoundationCards: 0, fastestNertzMs: null, streak: 0, bestStreak: 0,
       },
       achievements: {},        // id -> unlockedAt

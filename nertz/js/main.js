@@ -76,16 +76,26 @@
 
   // ============ game lifecycle ============
   function startGame(mode) {
+    // Tear down any round still in progress (e.g. Restart / R mid-game) so its
+    // bots' timers and staggered-start timeouts can't fire into the new round.
+    stopRound();
+
     App.mode = mode;
     App.foundations = [];
     const isZen = mode === "zen";
     const isDaily = mode === "daily";
+    App.isReplay = false;
+
+    // The difficulty actually used this round (Daily always uses normal bots),
+    // so rewards/achievements match what was played, not the menu selection.
+    App.roundDifficulty = isDaily ? "normal" : App.cfg.difficulty;
 
     let rng = Math.random;
     if (isDaily) {
       const seed = dailySeed();
       if (App.save.daily.lastSeed === seed && App.save.daily.lastResult) {
-        App.ui.toast("Daily already played — replaying for fun ✦");
+        App.isReplay = true; // already completed today — replay earns nothing
+        App.ui.toast("Daily already played — replaying for fun (no rewards) ✦");
       }
       rng = D.seededRng(seed);
     }
@@ -103,7 +113,7 @@
     App.bots = [];
     if (!isZen) {
       const n = isDaily ? 2 : App.cfg.opponents;
-      const diff = isDaily ? "normal" : App.cfg.difficulty;
+      const diff = App.roundDifficulty;
       for (let i = 0; i < n; i++) {
         const bot = new Nertz.Bot({
           id: "bot" + i,
@@ -127,8 +137,18 @@
     App.running = true;
     clearInterval(App.timer);
     App.timer = setInterval(tickClock, 250);
-    // stagger bot starts so the player gets a head start
-    App.bots.forEach((b, i) => setTimeout(() => b.start(), 900 + i * 350));
+    // stagger bot starts so the player gets a head start (tracked so a Restart
+    // mid-round can cancel any that haven't fired yet)
+    App._botStartTimers = App.bots.map((b, i) => setTimeout(() => b.start(), 900 + i * 350));
+  }
+
+  // Halt the current round's timers & bots without leaving the game screen.
+  function stopRound() {
+    App.running = false;
+    clearInterval(App.timer);
+    (App._botStartTimers || []).forEach(clearTimeout);
+    App._botStartTimers = [];
+    App.bots.forEach((b) => b.stop());
   }
 
   function onBotPlay(ev) {
@@ -184,9 +204,7 @@
   // ============ end of round ============
   function endRound(winnerId) {
     if (!App.running) return;
-    App.running = false;
-    clearInterval(App.timer);
-    App.bots.forEach((b) => b.stop());
+    stopRound();
     const timeMs = Date.now() - App.startTime;
 
     // gather standings
@@ -204,7 +222,7 @@
 
     const me = players.find((p) => p.isYou);
     const youWon = winnerId === "you" || (App.mode === "zen" && me.nertz === 0);
-    const beatHard = youWon && App.cfg.difficulty === "hard" && App.mode !== "zen";
+    const beatHard = youWon && App.roundDifficulty === "hard" && App.mode !== "zen";
 
     updateProgress(me, youWon, timeMs, beatHard);
     showResult(players, me, youWon, timeMs);
@@ -212,9 +230,13 @@
 
   function updateProgress(me, won, timeMs, beatHard) {
     const s = App.save.stats;
+    // Zen practice and Daily replays don't pay out rewards or feed the boards.
+    const noReward = App.mode === "zen" || App.isReplay;
+
     s.gamesPlayed++;
     s.totalFoundationCards += me.founded;
-    if (me.score > s.bestScore) s.bestScore = me.score;
+    // bestScore uses a JSON-safe null sentinel (−Infinity becomes null on save).
+    if (s.bestScore == null || me.score > s.bestScore) s.bestScore = me.score;
     if (won) {
       s.wins++; s.streak++; s.bestStreak = Math.max(s.bestStreak, s.streak);
       if (s.fastestNertzMs == null || timeMs < s.fastestNertzMs) s.fastestNertzMs = timeMs;
@@ -222,26 +244,26 @@
     } else { s.streak = 0; }
     App.save._flags = Object.assign(App.save._flags || {}, { beatHard: (App.save._flags && App.save._flags.beatHard) || beatHard });
 
-    // Zen is pure practice: stats & achievements still count, but no XP/coins.
-    if (App.mode === "zen") {
+    if (noReward) {
       App._rewards = { xp: 0, coins: 0 };
       App._levelUp = { leveledUp: false };
     } else {
       App._rewards = prog.scoreToRewards({
-        score: me.score, won, foundationCards: me.founded, timeMs, difficulty: App.cfg.difficulty,
+        score: me.score, won, foundationCards: me.founded, timeMs, difficulty: App.roundDifficulty,
       });
       App._levelUp = prog.grantRewards(App.save, App._rewards);
     }
     App._unlocked = prog.checkAchievements(App.save);
 
-    // leaderboard + ranked persistence
-    if (App.mode !== "zen") {
+    // leaderboard only for genuine ranked/fast/first-daily runs
+    if (!noReward) {
       Nertz.store.addLeaderboard(App.save, {
         name: App.save.profile.name || "You", score: me.score, mode: App.mode,
         date: new Date().toISOString().slice(0, 10), timeMs,
       });
     }
-    if (App.mode === "daily") {
+    // record the daily result only on the first play of the day, never on replays
+    if (App.mode === "daily" && !App.isReplay) {
       App.save.daily.lastSeed = dailySeed();
       App.save.daily.lastResult = { score: me.score, won };
     }
@@ -266,7 +288,8 @@
 
     const rr = $("#rewardRow");
     rr.innerHTML = "";
-    if (App.mode !== "zen") {
+    const noReward = App.mode === "zen" || App.isReplay;
+    if (!noReward) {
       rr.append(
         pill("xp", "+" + App._rewards.xp + " XP"),
         pill("coin", "+" + App._rewards.coins + " ◈"),
@@ -296,9 +319,7 @@
   }
 
   function backToMenu() {
-    App.running = false;
-    clearInterval(App.timer);
-    App.bots.forEach((b) => b.stop());
+    stopRound();
     showScreen("menu");
   }
 
@@ -405,7 +426,7 @@
       box("Games", s.gamesPlayed),
       box("Wins", s.wins),
       box("Win rate", winRate + "%"),
-      box("Best score", s.bestScore === -Infinity ? "—" : s.bestScore),
+      box("Best score", s.bestScore == null ? "—" : s.bestScore),
       box("Best streak", s.bestStreak),
       box("Fastest win", s.fastestNertzMs ? fmtTime(s.fastestNertzMs) : "—"),
     );
