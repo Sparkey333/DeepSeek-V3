@@ -50,9 +50,9 @@ using the OS's built-in WebView instead of bundling Chromium. It needs the
 [Rust toolchain](https://rustup.rs) plus Node. From `nertz/`:
 
 ```bash
-node scripts/build-web.js                      # assemble dist-web/ (the web root)
-npx @tauri-apps/cli@^2 icon build/icon.png     # generate src-tauri/icons/* (once)
-npx @tauri-apps/cli@^2 build                    # -> src-tauri/target/release/bundle/dmg/*.dmg
+node scripts/build-web.js                          # assemble dist-web/ (the web root)
+npx @tauri-apps/cli@^2 icon branding/icon.png      # generate src-tauri/icons/* (once)
+npx @tauri-apps/cli@^2 build                        # -> src-tauri/target/release/bundle/dmg/*.dmg
 ```
 
 The macOS bundle still has to be built on macOS, and it's unsigned (same

@@ -29,7 +29,7 @@ jobs:
         working-directory: nertz
         run: |
           node scripts/build-web.js
-          npx --yes @tauri-apps/cli@^2 icon build/icon.png
+          npx --yes @tauri-apps/cli@^2 icon branding/icon.png
 
       - name: Build Tauri app
         uses: tauri-apps/tauri-action@v0

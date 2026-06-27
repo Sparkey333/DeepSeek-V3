@@ -21,19 +21,20 @@
       "index.html",
       "css/**/*",
       "js/**/*",
-      "build/icon.*"
+      "assets/**/*",
+      "branding/icon.*"
     ],
     "mac": {
       "target": ["dmg"],
       "category": "public.app-category.games",
-      "icon": "build/icon.png"
+      "icon": "branding/icon.png"
     },
     "dmg": {
       "title": "Nertz Royale",
       "backgroundColor": "#0a3526"
     },
-    "win": { "target": ["nsis"], "icon": "build/icon.png" },
-    "linux": { "target": ["AppImage"], "category": "Game", "icon": "build/icon.png" }
+    "win": { "target": ["nsis"], "icon": "branding/icon.png" },
+    "linux": { "target": ["AppImage"], "category": "Game", "icon": "branding/icon.png" }
   },
   "devDependencies": {
     "electron": "^31.0.0",
