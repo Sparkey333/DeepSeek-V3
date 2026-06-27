@@ -5,7 +5,13 @@ next section to Gemini (or any image model). When the files come back, drop them
 into the folders named below and flip `hasAssets: true` for that theme in
 `js/themes.js` — they light up automatically, no other code changes.
 
-## What we need — 3 themes × 2 images = 6 files
+## Easiest path: just 3 card backs
+
+If you only want **3 assets total**, do the **3 card backs** (one per theme) —
+they're the highest-impact change and the table backgrounds already look good
+procedurally. The full set below (6 files) is the "nice-to-have" maximum.
+
+## Full set — 3 themes × 2 images = 6 files
 
 | Theme | Card back (PNG, **500×700**, no rounded corners) | Table background (JPG, **2560×1440**) |
 |-------|--------------------------------------------------|----------------------------------------|
