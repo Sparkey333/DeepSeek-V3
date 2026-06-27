@@ -38,6 +38,7 @@
     const s = App.save.settings;
     document.body.classList.toggle("left-handed", !!s.leftHanded);
     document.body.classList.toggle("reduce-motion", !!s.reduceMotion);
+    Nertz.themes.apply(s.theme || "classic");
   }
 
   function refreshLevelChip() {
@@ -443,6 +444,24 @@
 
   function renderSettings() {
     const wrap = el("div");
+
+    // Theme picker
+    wrap.appendChild(el("div", "set-row", "")).append(el("span", null, "Table theme"));
+    const grid = el("div", "theme-grid");
+    Nertz.themes.THEMES.forEach((t) => {
+      const opt = el("div", "theme-opt" + (App.save.settings.theme === t.id ? " on" : ""));
+      opt.append(el("div", "theme-swatch " + t.id), el("div", "t-name", t.name), el("div", "t-blurb", t.blurb));
+      opt.addEventListener("click", () => {
+        App.save.settings.theme = t.id;
+        Nertz.themes.apply(t.id);
+        Nertz.store.save(App.save);
+        grid.querySelectorAll(".theme-opt").forEach((o) => o.classList.remove("on"));
+        opt.classList.add("on");
+      });
+      grid.appendChild(opt);
+    });
+    wrap.appendChild(grid);
+
     const toggle = (label, key) => {
       const row = el("div", "set-row");
       row.append(el("span", null, label));

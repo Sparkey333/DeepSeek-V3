@@ -60,6 +60,9 @@ menu.
 - **Achievements** — First Shuffle, Speed Demon, Hot Streak, Ace Slayer, …
 - **Local leaderboard** — top 50 ranked scores, sorted high-to-low.
 - **Stats** — games, wins, win-rate, best score, best streak, fastest win.
+- **Themes** — three toggleable table looks (Classic Felt / Midnight Neon /
+  Royal Velvet) in Settings. They render procedurally today and are wired to
+  swap in real artwork the moment it lands (see [ASSETS_BRIEF.md](ASSETS_BRIEF.md)).
 
 ## Architecture
 

@@ -33,7 +33,7 @@
       achievements: {},        // id -> unlockedAt
       leaderboard: [],         // [{name, score, mode, date, timeMs}]
       daily: { lastSeed: null, lastResult: null },
-      settings: { sound: true, leftHanded: false, reduceMotion: false },
+      settings: { sound: true, leftHanded: false, reduceMotion: false, theme: "classic" },
     };
   }
 

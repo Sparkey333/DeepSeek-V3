@@ -1,0 +1,78 @@
+name: Build Nertz Royale desktop app
+
+# Builds the macOS .dmg (and Windows/Linux installers) on native runners,
+# uploads them as downloadable artifacts on every push, and attaches them to
+# a GitHub Release when a tag like `nertz-v1.0.0` is pushed.
+
+on:
+  push:
+    branches: ["claude/nertz-card-game-app-ukt44p"]
+    paths: ["nertz/**", ".github/workflows/nertz-desktop.yml"]
+    tags: ["nertz-v*"]
+  workflow_dispatch: {}
+
+defaults:
+  run:
+    working-directory: nertz
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            target: dist        # -> .dmg
+            artifact: nertz-macos-dmg
+            glob: nertz/dist/*.dmg
+          - os: windows-latest
+            target: dist:win    # -> NSIS .exe
+            artifact: nertz-windows-exe
+            glob: nertz/dist/*.exe
+          - os: ubuntu-latest
+            target: dist:linux  # -> AppImage
+            artifact: nertz-linux-appimage
+            glob: nertz/dist/*.AppImage
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: nertz/package-lock.json
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build ${{ matrix.os }} package
+        env:
+          # Build unsigned — signing/notarization needs an Apple Developer cert.
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm run ${{ matrix.target }}
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.glob }}
+          if-no-files-found: error
+
+  release:
+    # Only when a `nertz-v*` tag is pushed: collect all installers into a Release.
+    if: startsWith(github.ref, 'refs/tags/nertz-v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/**/*
+          generate_release_notes: true
