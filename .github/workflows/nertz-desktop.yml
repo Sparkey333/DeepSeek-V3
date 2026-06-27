@@ -7,7 +7,6 @@ name: Build Nertz Royale desktop app
 on:
   push:
     branches: ["claude/nertz-card-game-app-ukt44p"]
-    paths: ["nertz/**", ".github/workflows/nertz-desktop.yml"]
     tags: ["nertz-v*"]
   workflow_dispatch: {}
 
