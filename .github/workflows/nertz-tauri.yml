@@ -1,0 +1,49 @@
+name: Build Nertz Royale (Tauri)
+
+# A lighter, native alternative to the Electron build: Tauri produces a much
+# smaller .app/.dmg using the OS WebView. Builds on a macOS runner and uploads
+# the .dmg + .app as artifacts. (Tauri .dmg, like any macOS bundle, must be
+# built on macOS.)
+
+on:
+  push:
+    branches: ["claude/nertz-card-game-app-ukt44p"]
+    paths: ["nertz/**", ".github/workflows/nertz-tauri.yml"]
+  workflow_dispatch: {}
+
+jobs:
+  tauri-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin
+
+      - name: Assemble web root + generate icons
+        working-directory: nertz
+        run: |
+          node scripts/build-web.js
+          npx --yes @tauri-apps/cli@^2 icon build/icon.png
+
+      - name: Build Tauri app
+        uses: tauri-apps/tauri-action@v0
+        with:
+          projectPath: nertz
+          tauriScript: npx --yes @tauri-apps/cli@^2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Tauri bundles
+        uses: actions/upload-artifact@v4
+        with:
+          name: nertz-tauri-macos
+          path: |
+            nertz/src-tauri/target/release/bundle/dmg/*.dmg
+            nertz/src-tauri/target/release/bundle/macos/*.app
+          if-no-files-found: error

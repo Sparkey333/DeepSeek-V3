@@ -1,4 +1,11 @@
 node_modules/
 dist/
+dist-web/
 *.log
 .DS_Store
+
+# Tauri build outputs / generated files
+src-tauri/target/
+src-tauri/gen/
+src-tauri/icons/
+src-tauri/Cargo.lock
