@@ -227,6 +227,22 @@ body.left-handed .player-board { flex-direction: row-reverse; }
   50% { box-shadow: 0 0 0 3px var(--accent), 0 6px 16px rgba(56,224,166,0.5); transform: translateY(-3px); }
 }
 
+/* flying card (play-to-foundation animation) */
+.fly-card {
+  z-index: 1200; pointer-events: none; will-change: transform;
+  border-radius: 11px;
+}
+.foundation-slot .card.just-played { animation: landPop .34s var(--ease); }
+@keyframes landPop {
+  0% { transform: scale(1.14); filter: brightness(1.25); }
+  60% { transform: scale(0.97); }
+  100% { transform: scale(1); filter: brightness(1); }
+}
+/* a foundation slot briefly glows when a card lands */
+.foundation-slot.just-played, .foundation-slot:has(.just-played) {
+  box-shadow: 0 0 0 2px var(--gold), 0 0 18px rgba(245,196,81,0.55);
+}
+
 /* badge on nertz pile count */
 .nertz-count {
   position: absolute; top: -8px; right: -8px; min-width: 22px; height: 22px; padding: 0 5px;

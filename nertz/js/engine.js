@@ -54,6 +54,7 @@
     }
 
     // ---- accessors -------------------------------------------------------
+    peek(source) { return this._peekSource(source); } // public: identity of a source's playable card
     nertzTop() { return this.nertz[this.nertz.length - 1] || null; }
     wasteTop() { return this.waste[this.waste.length - 1] || null; }
     workTop(i) { const p = this.work[i]; return p[p.length - 1] || null; }

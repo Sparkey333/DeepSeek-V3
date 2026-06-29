@@ -140,6 +140,7 @@
       host.innerHTML = "";
       bots.forEach((b) => {
         const o = el("div", "opp");
+        o.dataset.botId = b.id; // so card-flight animations can originate here
         if (b.id === leaderId) o.classList.add("lead");
         const ava = el("div", "opp-ava", b.avatar);
         const meta = el("div", "opp-meta");
@@ -210,12 +211,13 @@
         if (d.origin) d.origin.style.opacity = "";
 
         if (!d.moved) { // a tap → quick play to foundation
-          this.api.tap && this.api.tap(d.source);
+          const fromRect = d.origin ? d.origin.getBoundingClientRect() : d.rect;
+          this.api.tap && this.api.tap(d.source, fromRect);
           return;
         }
         const pt = e.changedTouches ? e.changedTouches[0] : e;
         const target = this._dropTargetAt(pt.clientX, pt.clientY);
-        if (target) this.api.drop && this.api.drop(d.source, target);
+        if (target) this.api.drop && this.api.drop(d.source, target, d.rect);
       };
 
       document.addEventListener("mousedown", onDown);
@@ -244,6 +246,40 @@
     }
 
     // ============ FX ============
+    // Fly a card face from `fromRect` to `toRect`, then reveal the real card.
+    // cardData: {label, symbol, color}. opts: {destEl, duration, onDone, spin}
+    flyCard(cardData, fromRect, toRect, opts) {
+      opts = opts || {};
+      const done = () => { if (opts.destEl) { opts.destEl.style.visibility = ""; opts.destEl.classList.add("just-played"); setTimeout(() => opts.destEl && opts.destEl.classList.remove("just-played"), 360); } if (opts.onDone) opts.onDone(); };
+      if (!fromRect || !toRect || document.body.classList.contains("reduce-motion")) { done(); return; }
+
+      const c = cardEl({ label: cardData.label, symbol: cardData.symbol, color: cardData.color, faceUp: true });
+      c.classList.add("fly-card");
+      c.style.position = "fixed";
+      c.style.left = "0"; c.style.top = "0"; c.style.margin = "0";
+      c.style.width = fromRect.width + "px";
+      c.style.height = fromRect.height + "px";
+      document.body.appendChild(c);
+
+      if (opts.destEl) opts.destEl.style.visibility = "hidden"; // hide until the flight lands
+
+      const sx = fromRect.left, sy = fromRect.top;
+      const ex = toRect.left + (toRect.width - fromRect.width) / 2;
+      const ey = toRect.top + (toRect.height - fromRect.height) / 2;
+      const scale = toRect.width / fromRect.width || 1;
+      const spin = opts.spin != null ? opts.spin : 10;
+      const anim = c.animate(
+        [
+          { transform: `translate(${sx}px, ${sy}px) scale(1) rotate(0deg)`, boxShadow: "0 6px 16px rgba(0,0,0,.4)" },
+          { transform: `translate(${(sx + ex) / 2}px, ${Math.min(sy, ey) - 46}px) scale(${(1 + scale) / 2}) rotate(${spin}deg)`, offset: 0.55 },
+          { transform: `translate(${ex}px, ${ey}px) scale(${scale}) rotate(0deg)`, boxShadow: "0 14px 34px rgba(0,0,0,.5)" },
+        ],
+        { duration: opts.duration || 440, easing: "cubic-bezier(.34,.65,.25,1)", fill: "forwards" }
+      );
+      anim.onfinish = () => { c.remove(); done(); };
+      anim.oncancel = () => { c.remove(); done(); };
+    }
+
     toast(msg, gold) {
       const t = el("div", "toast" + (gold ? " gold" : ""));
       t.textContent = msg;

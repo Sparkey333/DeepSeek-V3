@@ -9,10 +9,12 @@
   const Nertz = (g.Nertz = g.Nertz || {});
   const D = Nertz.deck;
 
+  // Tick = ms between a bot's foundation plays. Paced deliberately slow so each
+  // play's fly-to-center animation is readable and the human has time to act.
   const PROFILES = {
-    easy:   { name: "Rookie",  tick: [1500, 2500], mistake: 0.45 },
-    normal: { name: "Sharp",   tick: [1000, 1800], mistake: 0.22 },
-    hard:   { name: "Ace",     tick: [650, 1200],  mistake: 0.07 },
+    easy:   { name: "Rookie",  tick: [2800, 4400], mistake: 0.45 },
+    normal: { name: "Sharp",   tick: [1900, 3100], mistake: 0.22 },
+    hard:   { name: "Ace",     tick: [1200, 2100], mistake: 0.07 },
   };
 
   const AVATARS = ["🦊", "🐼", "🦉", "🐙", "🦁", "🐢"];

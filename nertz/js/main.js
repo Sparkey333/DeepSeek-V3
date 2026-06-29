@@ -153,10 +153,22 @@
 
   function onBotPlay(ev) {
     if (!App.running) return;
+    // Fly the bot's card from its avatar chip to the foundation it landed on.
+    const fromEl = document.querySelector('.opp[data-bot-id="' + ev.bot.id + '"] .opp-ava');
+    const fromRect = fromEl ? fromEl.getBoundingClientRect() : null;
     App.ui.render(App.engine);
     App.ui.renderOpponents(App.bots, leaderId());
-    pulseLeader();
+    flyToFoundation(ev.card, fromRect, true);
     if (ev.bot.nertzRemaining() === 0) endRound(ev.bot.id);
+  }
+
+  // Animate a just-played card flying from `fromRect` to its foundation slot.
+  function flyToFoundation(card, fromRect, isBot) {
+    if (!card) return;
+    const destEl = document.querySelector('#foundations [data-card-id="' + card.id + '"]');
+    if (!destEl || !fromRect) return;
+    const toRect = destEl.getBoundingClientRect();
+    App.ui.flyCard(card, fromRect, toRect, { destEl: destEl, duration: isBot ? 520 : 380, spin: isBot ? -9 : 9 });
   }
 
   function leaderId() {
@@ -181,18 +193,24 @@
   }
 
   // ============ interaction handlers ============
-  function onTap(source) {
+  function onTap(source, fromRect) {
     if (!App.running) return;
+    const card = App.engine.peek(source); // capture identity before the move
     if (App.engine.playToFoundation(source)) {
       App.ui.render(App.engine); syncHud(); beep(660);
+      flyToFoundation(card, fromRect, false);
     }
   }
-  function onDrop(source, target) {
+  function onDrop(source, target, fromRect) {
     if (!App.running) return;
-    let ok = false;
-    if (target.zone === "foundation") ok = App.engine.playToFoundation(source);
+    const card = App.engine.peek(source);
+    let ok = false, toFoundation = target.zone === "foundation";
+    if (toFoundation) ok = App.engine.playToFoundation(source);
     else if (target.zone === "work") ok = App.engine.moveToWork(source, target.pileIndex);
-    if (ok) { App.ui.render(App.engine); syncHud(); beep(target.zone === "foundation" ? 660 : 520); }
+    if (ok) {
+      App.ui.render(App.engine); syncHud(); beep(toFoundation ? 660 : 520);
+      if (toFoundation) flyToFoundation(card, fromRect, false);
+    }
   }
   function onFlipStock() {
     if (!App.running) return;

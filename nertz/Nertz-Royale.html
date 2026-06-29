@@ -235,6 +235,22 @@ body.left-handed .player-board { flex-direction: row-reverse; }
   50% { box-shadow: 0 0 0 3px var(--accent), 0 6px 16px rgba(56,224,166,0.5); transform: translateY(-3px); }
 }
 
+/* flying card (play-to-foundation animation) */
+.fly-card {
+  z-index: 1200; pointer-events: none; will-change: transform;
+  border-radius: 11px;
+}
+.foundation-slot .card.just-played { animation: landPop .34s var(--ease); }
+@keyframes landPop {
+  0% { transform: scale(1.14); filter: brightness(1.25); }
+  60% { transform: scale(0.97); }
+  100% { transform: scale(1); filter: brightness(1); }
+}
+/* a foundation slot briefly glows when a card lands */
+.foundation-slot.just-played, .foundation-slot:has(.just-played) {
+  box-shadow: 0 0 0 2px var(--gold), 0 0 18px rgba(245,196,81,0.55);
+}
+
 /* badge on nertz pile count */
 .nertz-count {
   position: absolute; top: -8px; right: -8px; min-width: 22px; height: 22px; padding: 0 5px;
@@ -750,6 +766,7 @@ body.theme-has-assets .card.face-down::after { content: none; }
     }
 
     // ---- accessors -------------------------------------------------------
+    peek(source) { return this._peekSource(source); } // public: identity of a source's playable card
     nertzTop() { return this.nertz[this.nertz.length - 1] || null; }
     wasteTop() { return this.waste[this.waste.length - 1] || null; }
     workTop(i) { const p = this.work[i]; return p[p.length - 1] || null; }
@@ -926,10 +943,12 @@ body.theme-has-assets .card.face-down::after { content: none; }
   const Nertz = (g.Nertz = g.Nertz || {});
   const D = Nertz.deck;
 
+  // Tick = ms between a bot's foundation plays. Paced deliberately slow so each
+  // play's fly-to-center animation is readable and the human has time to act.
   const PROFILES = {
-    easy:   { name: "Rookie",  tick: [1500, 2500], mistake: 0.45 },
-    normal: { name: "Sharp",   tick: [1000, 1800], mistake: 0.22 },
-    hard:   { name: "Ace",     tick: [650, 1200],  mistake: 0.07 },
+    easy:   { name: "Rookie",  tick: [2800, 4400], mistake: 0.45 },
+    normal: { name: "Sharp",   tick: [1900, 3100], mistake: 0.22 },
+    hard:   { name: "Ace",     tick: [1200, 2100], mistake: 0.07 },
   };
 
   const AVATARS = ["🦊", "🐼", "🦉", "🐙", "🦁", "🐢"];
@@ -1321,6 +1340,7 @@ body.theme-has-assets .card.face-down::after { content: none; }
       host.innerHTML = "";
       bots.forEach((b) => {
         const o = el("div", "opp");
+        o.dataset.botId = b.id; // so card-flight animations can originate here
         if (b.id === leaderId) o.classList.add("lead");
         const ava = el("div", "opp-ava", b.avatar);
         const meta = el("div", "opp-meta");
@@ -1391,12 +1411,13 @@ body.theme-has-assets .card.face-down::after { content: none; }
         if (d.origin) d.origin.style.opacity = "";
 
         if (!d.moved) { // a tap → quick play to foundation
-          this.api.tap && this.api.tap(d.source);
+          const fromRect = d.origin ? d.origin.getBoundingClientRect() : d.rect;
+          this.api.tap && this.api.tap(d.source, fromRect);
           return;
         }
         const pt = e.changedTouches ? e.changedTouches[0] : e;
         const target = this._dropTargetAt(pt.clientX, pt.clientY);
-        if (target) this.api.drop && this.api.drop(d.source, target);
+        if (target) this.api.drop && this.api.drop(d.source, target, d.rect);
       };
 
       document.addEventListener("mousedown", onDown);
@@ -1425,6 +1446,40 @@ body.theme-has-assets .card.face-down::after { content: none; }
     }
 
     // ============ FX ============
+    // Fly a card face from `fromRect` to `toRect`, then reveal the real card.
+    // cardData: {label, symbol, color}. opts: {destEl, duration, onDone, spin}
+    flyCard(cardData, fromRect, toRect, opts) {
+      opts = opts || {};
+      const done = () => { if (opts.destEl) { opts.destEl.style.visibility = ""; opts.destEl.classList.add("just-played"); setTimeout(() => opts.destEl && opts.destEl.classList.remove("just-played"), 360); } if (opts.onDone) opts.onDone(); };
+      if (!fromRect || !toRect || document.body.classList.contains("reduce-motion")) { done(); return; }
+
+      const c = cardEl({ label: cardData.label, symbol: cardData.symbol, color: cardData.color, faceUp: true });
+      c.classList.add("fly-card");
+      c.style.position = "fixed";
+      c.style.left = "0"; c.style.top = "0"; c.style.margin = "0";
+      c.style.width = fromRect.width + "px";
+      c.style.height = fromRect.height + "px";
+      document.body.appendChild(c);
+
+      if (opts.destEl) opts.destEl.style.visibility = "hidden"; // hide until the flight lands
+
+      const sx = fromRect.left, sy = fromRect.top;
+      const ex = toRect.left + (toRect.width - fromRect.width) / 2;
+      const ey = toRect.top + (toRect.height - fromRect.height) / 2;
+      const scale = toRect.width / fromRect.width || 1;
+      const spin = opts.spin != null ? opts.spin : 10;
+      const anim = c.animate(
+        [
+          { transform: `translate(${sx}px, ${sy}px) scale(1) rotate(0deg)`, boxShadow: "0 6px 16px rgba(0,0,0,.4)" },
+          { transform: `translate(${(sx + ex) / 2}px, ${Math.min(sy, ey) - 46}px) scale(${(1 + scale) / 2}) rotate(${spin}deg)`, offset: 0.55 },
+          { transform: `translate(${ex}px, ${ey}px) scale(${scale}) rotate(0deg)`, boxShadow: "0 14px 34px rgba(0,0,0,.5)" },
+        ],
+        { duration: opts.duration || 440, easing: "cubic-bezier(.34,.65,.25,1)", fill: "forwards" }
+      );
+      anim.onfinish = () => { c.remove(); done(); };
+      anim.oncancel = () => { c.remove(); done(); };
+    }
+
     toast(msg, gold) {
       const t = el("div", "toast" + (gold ? " gold" : ""));
       t.textContent = msg;
@@ -1628,10 +1683,22 @@ body.theme-has-assets .card.face-down::after { content: none; }
 
   function onBotPlay(ev) {
     if (!App.running) return;
+    // Fly the bot's card from its avatar chip to the foundation it landed on.
+    const fromEl = document.querySelector('.opp[data-bot-id="' + ev.bot.id + '"] .opp-ava');
+    const fromRect = fromEl ? fromEl.getBoundingClientRect() : null;
     App.ui.render(App.engine);
     App.ui.renderOpponents(App.bots, leaderId());
-    pulseLeader();
+    flyToFoundation(ev.card, fromRect, true);
     if (ev.bot.nertzRemaining() === 0) endRound(ev.bot.id);
+  }
+
+  // Animate a just-played card flying from `fromRect` to its foundation slot.
+  function flyToFoundation(card, fromRect, isBot) {
+    if (!card) return;
+    const destEl = document.querySelector('#foundations [data-card-id="' + card.id + '"]');
+    if (!destEl || !fromRect) return;
+    const toRect = destEl.getBoundingClientRect();
+    App.ui.flyCard(card, fromRect, toRect, { destEl: destEl, duration: isBot ? 520 : 380, spin: isBot ? -9 : 9 });
   }
 
   function leaderId() {
@@ -1656,18 +1723,24 @@ body.theme-has-assets .card.face-down::after { content: none; }
   }
 
   // ============ interaction handlers ============
-  function onTap(source) {
+  function onTap(source, fromRect) {
     if (!App.running) return;
+    const card = App.engine.peek(source); // capture identity before the move
     if (App.engine.playToFoundation(source)) {
       App.ui.render(App.engine); syncHud(); beep(660);
+      flyToFoundation(card, fromRect, false);
     }
   }
-  function onDrop(source, target) {
+  function onDrop(source, target, fromRect) {
     if (!App.running) return;
-    let ok = false;
-    if (target.zone === "foundation") ok = App.engine.playToFoundation(source);
+    const card = App.engine.peek(source);
+    let ok = false, toFoundation = target.zone === "foundation";
+    if (toFoundation) ok = App.engine.playToFoundation(source);
     else if (target.zone === "work") ok = App.engine.moveToWork(source, target.pileIndex);
-    if (ok) { App.ui.render(App.engine); syncHud(); beep(target.zone === "foundation" ? 660 : 520); }
+    if (ok) {
+      App.ui.render(App.engine); syncHud(); beep(toFoundation ? 660 : 520);
+      if (toFoundation) flyToFoundation(card, fromRect, false);
+    }
   }
   function onFlipStock() {
     if (!App.running) return;
