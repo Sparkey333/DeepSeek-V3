@@ -33,6 +33,7 @@
       achievements: {},        // id -> unlockedAt
       leaderboard: [],         // [{name, score, mode, date, timeMs}]
       daily: { lastSeed: null, lastResult: null },
+      adventure: { cleared: {} },
       settings: { sound: true, leftHanded: false, reduceMotion: false, theme: "classic" },
     };
   }
@@ -49,6 +50,7 @@
       achievements: data.achievements || {},
       leaderboard: data.leaderboard || [],
       daily: Object.assign(base.daily, data.daily),
+      adventure: Object.assign(base.adventure, data.adventure),
     });
   }
 

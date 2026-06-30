@@ -33,6 +33,27 @@
       hasAssets: false,
       assets: { table: "assets/themes/royal/table.jpg", back: "assets/themes/royal/back.png" },
     },
+    {
+      id: "sakura",
+      name: "Sakura",
+      blurb: "Soft pink dusk, paper-white backs.",
+      hasAssets: false,
+      assets: { table: "assets/themes/sakura/table.jpg", back: "assets/themes/sakura/back.png" },
+    },
+    {
+      id: "forest",
+      name: "Forest",
+      blurb: "Mossy emerald, woodgrain backs.",
+      hasAssets: false,
+      assets: { table: "assets/themes/forest/table.jpg", back: "assets/themes/forest/back.png" },
+    },
+    {
+      id: "noir",
+      name: "Noir",
+      blurb: "Monochrome midnight, ivory ink.",
+      hasAssets: false,
+      assets: { table: "assets/themes/noir/table.jpg", back: "assets/themes/noir/back.png" },
+    },
   ];
 
   const byId = (id) => THEMES.find((t) => t.id === id) || THEMES[0];

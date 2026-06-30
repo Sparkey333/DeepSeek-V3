@@ -218,11 +218,24 @@ body.left-handed .player-board { flex-direction: row-reverse; }
   content: "♠"; position: absolute; inset: 0; display: grid; place-items: center;
   font-size: 26px; color: rgba(255,255,255,0.16);
 }
-.card .corner { font-weight: 800; font-size: 15px; line-height: 1; display: flex; flex-direction: column; align-items: center; width: 16px; }
+.card .corner { font-weight: 800; line-height: 0.92; display: flex; flex-direction: column; align-items: center; width: 15px; z-index: 2; }
+.card .corner.tl { align-self: flex-start; }
 .card .corner.br { align-self: flex-end; transform: rotate(180deg); }
-.card .corner .c-rank { font-size: 15px; }
-.card .corner .c-suit { font-size: 13px; }
-.card .pip-center { position: absolute; inset: 0; display: grid; place-items: center; font-size: 30px; opacity: 0.92; }
+.card .corner .c-rank { font-size: calc(var(--card-h) * 0.155); }
+.card .corner .c-suit { font-size: calc(var(--card-h) * 0.125); }
+
+/* number-card pip layout */
+.pip-field { position: absolute; inset: 13% 21%; pointer-events: none; }
+.pip { position: absolute; transform: translate(-50%, -50%); line-height: 1; font-size: calc(var(--card-h) * 0.15); font-weight: 700; }
+.pip.flip { transform: translate(-50%, -50%) rotate(180deg); }
+.ace-pip { font-size: calc(var(--card-h) * 0.4); filter: drop-shadow(0 1px 1px rgba(0,0,0,0.12)); }
+
+/* court cards (J/Q/K) — typographic monogram + faint suit watermark */
+.court-card::before { content: ""; position: absolute; inset: 7px; border: 1.5px solid currentColor; opacity: 0.22; border-radius: 7px; pointer-events: none; }
+.court-wm { position: absolute; inset: 0; display: grid; place-items: center; font-size: calc(var(--card-h) * 0.6); opacity: 0.1; }
+.court { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; }
+.court-letter { font-family: Georgia, "Times New Roman", serif; font-weight: 800; font-size: calc(var(--card-h) * 0.33); line-height: 1; }
+.court-suit { font-size: calc(var(--card-h) * 0.2); }
 .card.playable-hint { animation: hintPulse 0.9s var(--ease) infinite; }
 .card.compact { box-shadow: 0 1px 3px rgba(0,0,0,0.3), inset 0 0 0 1px var(--paper-edge); }
 
@@ -393,6 +406,53 @@ body.theme-royal .card.face-down {
 }
 body.theme-royal .card.face-down::after { content: "♛"; color: rgba(245,196,81,0.4); }
 
+/* ---- Sakura ---- */
+body.theme-sakura {
+  --felt-1: #c98aa6; --felt-2: #9c5f7e; --felt-3: #5e3550;
+  --accent: #ff7eb0; --accent-deep: #c84f86;
+  --gold: #ffd9a0; --gold-deep: #d9a86a;
+  --text: #fff3f8; --text-dim: #e7c3d4;
+}
+body.theme-sakura .card.face-down {
+  background:
+    radial-gradient(circle at 30% 30%, rgba(255,255,255,0.25) 0 2px, transparent 3px),
+    repeating-linear-gradient(45deg, #f7b8d2 0 10px, #f2a6c6 10px 20px),
+    linear-gradient(135deg, #f4aecb, #d97aa6);
+  box-shadow: inset 0 0 0 3px rgba(255,255,255,0.6), 0 2px 8px rgba(0,0,0,0.35);
+}
+body.theme-sakura .card.face-down::after { content: "❀"; color: rgba(255,255,255,0.5); }
+
+/* ---- Forest ---- */
+body.theme-forest {
+  --felt-1: #2f6b43; --felt-2: #1d4a2e; --felt-3: #0e2a1a;
+  --accent: #8fd694; --accent-deep: #3f9c5a;
+  --gold: #e8c06a; --gold-deep: #b88a2e;
+  --text: #eef7ee; --text-dim: #a9cdb0;
+}
+body.theme-forest .card.face-down {
+  background:
+    repeating-linear-gradient(92deg, rgba(60,36,18,0.5) 0 2px, transparent 2px 9px),
+    linear-gradient(135deg, #6b4326, #3f2614);
+  box-shadow: inset 0 0 0 2px rgba(232,192,106,0.5), 0 2px 8px rgba(0,0,0,0.45);
+}
+body.theme-forest .card.face-down::after { content: "🌲"; color: rgba(232,192,106,0.35); }
+
+/* ---- Noir ---- */
+body.theme-noir {
+  --felt-1: #2a2a2e; --felt-2: #171719; --felt-3: #0a0a0b;
+  --accent: #d7d7da; --accent-deep: #8a8a90;
+  --gold: #cfcfcf; --gold-deep: #8f8f8f;
+  --red: #d24b54; --red-soft: #e06f78;
+  --text: #f2f2f3; --text-dim: #a0a0a6;
+}
+body.theme-noir .card.face-down {
+  background:
+    repeating-linear-gradient(45deg, #2c2c30 0 6px, #222226 6px 12px),
+    linear-gradient(135deg, #2a2a2e, #141416);
+  box-shadow: inset 0 0 0 2px rgba(215,215,218,0.28), 0 2px 8px rgba(0,0,0,0.55);
+}
+body.theme-noir .card.face-down::after { content: "♦"; color: rgba(215,215,218,0.22); }
+
 /* ---- Artwork-driven mode (assets present) ---- */
 body.theme-has-assets {
   background: var(--theme-table) center / cover no-repeat fixed, var(--felt-2);
@@ -402,6 +462,59 @@ body.theme-has-assets .card.face-down {
   box-shadow: 0 2px 6px rgba(0,0,0,0.45), inset 0 0 0 1px rgba(255,255,255,0.12);
 }
 body.theme-has-assets .card.face-down::after { content: none; }
+
+/* ---- Mode banner (in-game, varies per mode) ---- */
+.mode-banner { text-align: center; font-size: 12px; font-weight: 700; color: var(--text-dim); padding: 0 14px 4px; letter-spacing: 0.02em; min-height: 16px; }
+.mode-banner.mode-adventure { color: var(--gold); }
+.mode-banner.mode-ranked { color: var(--accent); }
+.mode-banner.mode-daily { color: #7fb4ff; }
+.mode-banner.mode-zen { color: var(--text-dim); }
+
+/* ---- Adventure menu card ---- */
+.mode-card--story {
+  background: linear-gradient(160deg, rgba(245,196,81,0.2), rgba(94,47,147,0.18));
+  border-color: rgba(245,196,81,0.42);
+}
+
+/* ---- Adventure map ---- */
+.adv-sheet {
+  width: 100%; max-width: 560px; position: relative; max-height: 90vh; overflow: auto;
+  background: linear-gradient(180deg, #10324d, #0a2236);
+  border: 1px solid rgba(255,255,255,0.1); border-radius: 22px; padding: 22px;
+  box-shadow: var(--shadow); animation: pop .28s var(--ease);
+}
+.adv-head { text-align: center; margin-bottom: 16px; }
+.adv-title { font-size: 23px; font-weight: 850; letter-spacing: -0.02em; }
+.adv-sub { color: var(--text-dim); font-size: 13px; }
+.adv-chapter { margin-bottom: 18px; }
+.adv-ch-title { font-weight: 800; font-size: 15px; }
+.adv-ch-sub { color: var(--text-dim); font-size: 12px; margin-bottom: 10px; }
+.adv-levels { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.adv-node {
+  text-align: left; cursor: pointer; border-radius: 14px; padding: 12px; color: var(--text);
+  border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05);
+  display: flex; flex-direction: column; gap: 3px; transition: transform .14s var(--ease), border-color .15s;
+}
+.adv-node:hover:not(:disabled) { transform: translateY(-2px); border-color: var(--gold); }
+.adv-node.cleared { border-color: var(--accent-deep); background: rgba(56,224,166,0.1); }
+.adv-node.locked { opacity: 0.5; cursor: not-allowed; }
+.adv-node-icon { font-size: 22px; }
+.adv-node-name { font-weight: 800; font-size: 14px; }
+.adv-node-obj { font-size: 11px; color: var(--text-dim); }
+.adv-coming { grid-column: 1 / -1; text-align: center; color: var(--text-dim); font-size: 12px; padding: 10px; font-style: italic; }
+
+/* ---- Story dialogue ---- */
+.story-overlay { align-items: flex-end; }
+.story-box {
+  width: 100%; max-width: 560px; margin: 0 auto 30px; cursor: pointer; position: relative;
+  background: linear-gradient(180deg, rgba(8,28,40,0.97), rgba(6,20,30,0.97));
+  border: 1px solid rgba(255,255,255,0.14); border-radius: 18px;
+  padding: 18px 20px 14px 86px; box-shadow: var(--shadow); animation: pop .22s var(--ease);
+}
+.story-avatar { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); font-size: 46px; }
+.story-name { font-weight: 850; color: var(--gold); font-size: 14px; margin-bottom: 4px; }
+.story-text { font-size: 15px; line-height: 1.42; }
+.story-tap { font-size: 11px; color: var(--text-dim); text-align: right; margin-top: 8px; }
 
 /* ---- Theme picker (settings panel) ---- */
 .theme-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 4px 0 14px; }
@@ -416,6 +529,9 @@ body.theme-has-assets .card.face-down::after { content: none; }
 .theme-swatch.classic { background: radial-gradient(120% 90% at 50% 0, #0c4733, #072018); }
 .theme-swatch.neon { background: linear-gradient(135deg, #22d3ee, #131938 60%, #ff4d6d); }
 .theme-swatch.royal { background: linear-gradient(135deg, #5e2f93, #2a1147 60%, #f5c451); }
+.theme-swatch.sakura { background: linear-gradient(135deg, #ff7eb0, #9c5f7e 60%, #ffd9a0); }
+.theme-swatch.forest { background: linear-gradient(135deg, #8fd694, #1d4a2e 60%, #6b4326); }
+.theme-swatch.noir { background: linear-gradient(135deg, #d7d7da, #171719 60%, #8a8a90); }
 .theme-opt .t-name { font-weight: 800; font-size: 13px; }
 .theme-opt .t-blurb { font-size: 11px; color: var(--text-dim); }
 
@@ -454,22 +570,27 @@ body.theme-has-assets .card.face-down::after { content: none; }
         <button class="mode-card mode-card--primary" data-mode="fast">
           <span class="mode-emoji">⚡</span>
           <span class="mode-title">Fast Play</span>
-          <span class="mode-desc">Jump straight in. One quick round vs the bots.</span>
+          <span class="mode-desc">Jump straight in — one quick round vs a single bot.</span>
+        </button>
+        <button class="mode-card mode-card--story" data-mode="adventure">
+          <span class="mode-emoji">🗺️</span>
+          <span class="mode-title">Adventure</span>
+          <span class="mode-desc">Shuffleton Story — a cozy career campaign with rivals &amp; objectives.</span>
         </button>
         <button class="mode-card" data-mode="ranked">
           <span class="mode-emoji">🏁</span>
           <span class="mode-title">Ranked Race</span>
-          <span class="mode-desc">Earn XP, climb levels, chase the leaderboard.</span>
+          <span class="mode-desc">Full table (1–3 bots). Earn XP, climb levels, hit the leaderboard.</span>
         </button>
         <button class="mode-card" data-mode="daily">
           <span class="mode-emoji">📅</span>
           <span class="mode-title">Daily Challenge</span>
-          <span class="mode-desc">Everyone gets the same shuffle. One shot a day.</span>
+          <span class="mode-desc">Same shuffle for everyone, 2 bots. One ranked shot a day.</span>
         </button>
         <button class="mode-card" data-mode="zen">
           <span class="mode-emoji">🌙</span>
           <span class="mode-title">Zen Solo</span>
-          <span class="mode-desc">No bots, no clock. Just you and the cards.</span>
+          <span class="mode-desc">No bots, no pressure. Just you and the cards.</span>
         </button>
       </section>
 
@@ -501,6 +622,9 @@ body.theme-has-assets .card.face-down::after { content: none; }
         <button class="icon-btn ghost" id="btnRestart" title="New deal (R)">↻</button>
         <button class="icon-btn ghost" id="btnHint" title="Hint (H)">💡</button>
       </div>
+
+      <!-- Mode banner (varies per game mode) -->
+      <div class="mode-banner" id="modeBanner"></div>
 
       <!-- Opponents strip -->
       <div class="opp-strip" id="oppStrip"></div>
@@ -681,6 +805,27 @@ body.theme-has-assets .card.face-down::after { content: none; }
       hasAssets: false,
       assets: { table: "assets/themes/royal/table.jpg", back: "assets/themes/royal/back.png" },
     },
+    {
+      id: "sakura",
+      name: "Sakura",
+      blurb: "Soft pink dusk, paper-white backs.",
+      hasAssets: false,
+      assets: { table: "assets/themes/sakura/table.jpg", back: "assets/themes/sakura/back.png" },
+    },
+    {
+      id: "forest",
+      name: "Forest",
+      blurb: "Mossy emerald, woodgrain backs.",
+      hasAssets: false,
+      assets: { table: "assets/themes/forest/table.jpg", back: "assets/themes/forest/back.png" },
+    },
+    {
+      id: "noir",
+      name: "Noir",
+      blurb: "Monochrome midnight, ivory ink.",
+      hasAssets: false,
+      assets: { table: "assets/themes/noir/table.jpg", back: "assets/themes/noir/back.png" },
+    },
   ];
 
   const byId = (id) => THEMES.find((t) => t.id === id) || THEMES[0];
@@ -706,6 +851,87 @@ body.theme-has-assets .card.face-down::after { content: none; }
   }
 
   Nertz.themes = { THEMES, byId, apply };
+})(typeof window !== "undefined" ? window : this);
+
+</script>
+  <script>
+/* audio.js — tiny WebAudio sound design (no asset files).
+ * Synthesizes subtle card sounds so the standalone HTML stays self-contained.
+ */
+(function (g) {
+  "use strict";
+  const Nertz = (g.Nertz = g.Nertz || {});
+
+  let ctx = null;
+  let enabled = true;
+  let noiseBuf = null;
+  let master = null;
+
+  function ensure() {
+    if (ctx) return ctx;
+    try {
+      ctx = new (g.AudioContext || g.webkitAudioContext)();
+      master = ctx.createGain();
+      master.gain.value = 0.9;
+      master.connect(ctx.destination);
+      // 1s of white noise reused for card "snaps"
+      const len = Math.floor(ctx.sampleRate * 1);
+      noiseBuf = ctx.createBuffer(1, len, ctx.sampleRate);
+      const d = noiseBuf.getChannelData(0);
+      for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+    } catch (e) { ctx = null; }
+    return ctx;
+  }
+
+  function now() { return ctx.currentTime; }
+
+  // filtered noise burst (the "flick/snap" of a card)
+  function snap(t, { dur = 0.09, freq = 2200, q = 0.8, gain = 0.12 } = {}) {
+    const src = ctx.createBufferSource(); src.buffer = noiseBuf;
+    const bp = ctx.createBiquadFilter(); bp.type = "bandpass"; bp.frequency.value = freq; bp.Q.value = q;
+    const gn = ctx.createGain();
+    gn.gain.setValueAtTime(0.0001, t);
+    gn.gain.exponentialRampToValueAtTime(gain, t + 0.006);
+    gn.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    src.connect(bp); bp.connect(gn); gn.connect(master);
+    src.start(t); src.stop(t + dur + 0.02);
+  }
+
+  // short pitched tone (chimes / fanfare)
+  function tone(t, { freq = 660, dur = 0.16, type = "sine", gain = 0.09 } = {}) {
+    const o = ctx.createOscillator(); o.type = type; o.frequency.value = freq;
+    const gn = ctx.createGain();
+    gn.gain.setValueAtTime(0.0001, t);
+    gn.gain.exponentialRampToValueAtTime(gain, t + 0.012);
+    gn.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(gn); gn.connect(master);
+    o.start(t); o.stop(t + dur + 0.02);
+  }
+
+  const SOUNDS = {
+    play() { const t = now(); snap(t, { freq: 2400, gain: 0.11, dur: 0.08 }); tone(t + 0.005, { freq: 520, dur: 0.05, gain: 0.03, type: "triangle" }); },
+    deal() { const t = now(); snap(t, { freq: 1700, gain: 0.08, dur: 0.07 }); },
+    flip() { const t = now(); snap(t, { freq: 1200, q: 0.6, gain: 0.09, dur: 0.11 }); },
+    foundation() { const t = now(); tone(t, { freq: 740, dur: 0.12, gain: 0.07, type: "sine" }); tone(t + 0.07, { freq: 990, dur: 0.16, gain: 0.07, type: "sine" }); },
+    invalid() { const t = now(); tone(t, { freq: 150, dur: 0.16, gain: 0.08, type: "sawtooth" }); },
+    select() { const t = now(); tone(t, { freq: 420, dur: 0.06, gain: 0.05, type: "triangle" }); },
+    levelup() { const t = now(); [523, 659, 784, 1046].forEach((f, i) => tone(t + i * 0.09, { freq: f, dur: 0.22, gain: 0.07 })); },
+    win() { const t = now(); [659, 784, 988, 1318, 1568].forEach((f, i) => tone(t + i * 0.1, { freq: f, dur: 0.28, gain: 0.08 })); },
+    lose() { const t = now(); [392, 330, 262].forEach((f, i) => tone(t + i * 0.14, { freq: f, dur: 0.3, gain: 0.07, type: "triangle" })); },
+  };
+
+  Nertz.audio = {
+    setEnabled(v) { enabled = !!v; },
+    // unlock the AudioContext on first user gesture (browsers require this)
+    unlock() { if (enabled && ensure() && ctx.state === "suspended") ctx.resume(); },
+    play(type) {
+      if (!enabled) return;
+      if (!ensure()) return;
+      if (ctx.state === "suspended") ctx.resume();
+      const fn = SOUNDS[type];
+      if (fn) { try { fn(); } catch (e) { /* ignore */ } }
+    },
+  };
 })(typeof window !== "undefined" ? window : this);
 
 </script>
@@ -1083,6 +1309,7 @@ body.theme-has-assets .card.face-down::after { content: none; }
       achievements: {},        // id -> unlockedAt
       leaderboard: [],         // [{name, score, mode, date, timeMs}]
       daily: { lastSeed: null, lastResult: null },
+      adventure: { cleared: {} },
       settings: { sound: true, leftHanded: false, reduceMotion: false, theme: "classic" },
     };
   }
@@ -1099,6 +1326,7 @@ body.theme-has-assets .card.face-down::after { content: none; }
       achievements: data.achievements || {},
       leaderboard: data.leaderboard || [],
       daily: Object.assign(base.daily, data.daily),
+      adventure: Object.assign(base.adventure, data.adventure),
     });
   }
 
@@ -1198,6 +1426,242 @@ body.theme-has-assets .card.face-down::after { content: none; }
 
 </script>
   <script>
+/* adventure.js — "Nertz: Shuffleton Story" career/adventure mode.
+ *
+ * A cozy, Golf-Story-flavored campaign: you return to your seaside hometown to
+ * revive its faded Nertz scene and win the Shuffleton Cup. Each level is a Nertz
+ * match with a specific opponent set and objective, wrapped in character
+ * dialogue. This module owns its own DOM (map + dialogue overlays) and talks to
+ * main.js through a small hook API, so the rest of the game stays decoupled.
+ */
+(function (g) {
+  "use strict";
+  const Nertz = (g.Nertz = g.Nertz || {});
+  const el = (t, c, x) => { const e = document.createElement(t); if (c) e.className = c; if (x != null) e.textContent = x; return e; };
+
+  // ---- cast -------------------------------------------------------------
+  const CHARS = {
+    you:   { name: "You",          avatar: "🧑" },
+    gran:  { name: "Gran Marge",   avatar: "🧶" },
+    rusty: { name: "Rusty",        avatar: "🦝" },
+    mitt:  { name: "Mitt",         avatar: "🐈" },
+    mauser:{ name: "Mauser",       avatar: "🐈‍⬛" },
+    mayor: { name: "Mayor Aces",   avatar: "🦅" },
+  };
+
+  // ---- objectives -------------------------------------------------------
+  function objectiveText(o) {
+    if (o.type === "win") return "Empty your Nertz pile before your rivals.";
+    if (o.type === "score") return "Reach a net score of " + o.target + "+.";
+    if (o.type === "time") return "Win the race in under " + Math.floor(o.target / 60) + ":" + String(o.target % 60).padStart(2, "0") + ".";
+    return "";
+  }
+  function objectivePass(o, ctx) {
+    if (o.type === "win") return ctx.won;
+    if (o.type === "score") return ctx.score >= o.target;
+    if (o.type === "time") return ctx.won && ctx.timeMs <= o.target * 1000;
+    return ctx.won;
+  }
+
+  // ---- campaign data ----------------------------------------------------
+  const CHAPTERS = [
+    {
+      id: "ch1",
+      title: "Chapter 1 — Back to Shuffleton",
+      subtitle: "The Riffle Room has gone quiet. Time to deal it back to life.",
+      levels: [
+        {
+          id: "1-1", name: "The Kitchen Table", icon: "🍵",
+          bots: [{ name: "Gran Marge", avatar: "🧶", difficulty: "easy" }],
+          objective: { type: "win" },
+          reward: { xp: 60, coins: 20 },
+          intro: [
+            { who: "gran", text: "Welcome home, dear! Sit — let's knock the rust off your shuffle." },
+            { who: "gran", text: "Remember: race to empty your Nertz pile onto the middle. Aces start a pile, build up by suit. Fastest hands win." },
+            { who: "you", text: "Just like when I was a kid. Deal 'em, Gran." },
+          ],
+          win: [{ who: "gran", text: "Ha! Still got it. The Riffle Room could use hands like yours again." }],
+          lose: [{ who: "gran", text: "Rusty as a dropped anchor. Shuffle up and try once more, sweetheart." }],
+        },
+        {
+          id: "1-2", name: "The Bait Shop Bet", icon: "🪝",
+          bots: [{ name: "Rusty", avatar: "🦝", difficulty: "normal" }],
+          objective: { type: "win" },
+          reward: { xp: 90, coins: 30 },
+          intro: [
+            { who: "rusty", text: "Heard Marge's grandkid is back. Tell ya what — beat me and I'll fix the Riffle Room's busted neon sign." },
+            { who: "you", text: "Deal." },
+            { who: "rusty", text: "Heh. I play slow but I don't miss. Let's see those hands." },
+          ],
+          win: [{ who: "rusty", text: "...Well I'll be. Sign's as good as lit. Don't let it go to your head." }],
+          lose: [{ who: "rusty", text: "Slow and steady, kid. Come back when you've found your rhythm." }],
+        },
+        {
+          id: "1-3", name: "Twin Trouble", icon: "🐾",
+          bots: [
+            { name: "Mitt", avatar: "🐈", difficulty: "normal" },
+            { name: "Mauser", avatar: "🐈‍⬛", difficulty: "normal" },
+          ],
+          objective: { type: "score", target: 25 },
+          reward: { xp: 130, coins: 45, unlockTheme: "forest" },
+          intro: [
+            { who: "mitt", text: "Two on one! Hope you brought extra paws." },
+            { who: "mauser", text: "Mitt. Focus. ...Score big or go home, newcomer." },
+            { who: "you", text: "Bank 25 to the foundations and you'll be napping by the end." },
+          ],
+          win: [{ who: "mitt", text: "Whoa! Did you SEE that pile go up?" }, { who: "mauser", text: "Respect. The Forest table felt is yours — you earned the unlock." }],
+          lose: [{ who: "mauser", text: "Twenty-five was the bar. Sharpen up and pounce again." }],
+        },
+        {
+          id: "1-4", name: "Pier Showdown", icon: "🎡",
+          bots: [{ name: "Mayor Aces", avatar: "🦅", difficulty: "hard" }],
+          objective: { type: "win" },
+          reward: { xp: 220, coins: 90, unlockTheme: "royal", title: "Shuffleton Hopeful" },
+          intro: [
+            { who: "mayor", text: "So YOU'RE the one stirring up my sleepy little town. The Riffle Room is an eyesore." },
+            { who: "you", text: "It's a landmark. And after this hand, it's reopening." },
+            { who: "mayor", text: "Bold. I am the fastest hands on this coast. Prove me wrong — if you can." },
+          ],
+          win: [
+            { who: "mayor", text: "Impossible... my own pier, and I'm out-dealt." },
+            { who: "gran", text: "That's my grandkid! Chapter one's in the books — the Coastal Circuit awaits." },
+          ],
+          lose: [{ who: "mayor", text: "As expected. Run along now." }],
+        },
+      ],
+    },
+    {
+      id: "ch2",
+      title: "Chapter 2 — The Coastal Circuit",
+      subtitle: "Locked — win the Pier Showdown to set sail.",
+      locked: true,
+      levels: [],
+    },
+  ];
+
+  const allLevels = () => CHAPTERS.flatMap((c) => c.levels);
+  function levelById(id) { return allLevels().find((l) => l.id === id); }
+  function firstLevelId() { return allLevels()[0].id; }
+  function isCleared(save, id) { return !!(save.adventure && save.adventure.cleared && save.adventure.cleared[id]); }
+  function isUnlocked(save, id) {
+    const ids = allLevels().map((l) => l.id);
+    const i = ids.indexOf(id);
+    if (i <= 0) return true;             // first level always open
+    return isCleared(save, ids[i - 1]);  // unlocked once the previous is cleared
+  }
+  function nextLevelId(id) {
+    const ids = allLevels().map((l) => l.id);
+    const i = ids.indexOf(id);
+    return i >= 0 && i < ids.length - 1 ? ids[i + 1] : null;
+  }
+
+  // ---- hooks from main --------------------------------------------------
+  let hooks = {};
+  function init(h) { hooks = h || {}; } // { getSave, onStartLevel, grantReward, saveProgress, onExit }
+
+  // ---- DOM (lazily built) ----------------------------------------------
+  let mapEl = null, storyEl = null;
+
+  function ensureMap() {
+    if (mapEl) return mapEl;
+    mapEl = el("div", "overlay adv-map");
+    mapEl.innerHTML = '<div class="adv-sheet"><button class="sheet-close" id="advClose">✕</button><div class="adv-head"><div class="adv-title">Nertz: Shuffleton Story</div><div class="adv-sub">Revive the Riffle Room. Win the Shuffleton Cup.</div></div><div class="adv-body" id="advBody"></div></div>';
+    document.body.appendChild(mapEl);
+    mapEl.querySelector("#advClose").addEventListener("click", () => { hide(mapEl); if (hooks.onExit) hooks.onExit(); });
+    return mapEl;
+  }
+
+  function renderMap() {
+    ensureMap();
+    const save = hooks.getSave();
+    const body = mapEl.querySelector("#advBody");
+    body.innerHTML = "";
+    CHAPTERS.forEach((ch) => {
+      const chEl = el("div", "adv-chapter");
+      chEl.append(el("div", "adv-ch-title", ch.title), el("div", "adv-ch-sub", ch.subtitle));
+      const grid = el("div", "adv-levels");
+      ch.levels.forEach((lvl) => {
+        const cleared = isCleared(save, lvl.id);
+        const unlocked = isUnlocked(save, lvl.id);
+        const node = el("button", "adv-node" + (cleared ? " cleared" : unlocked ? "" : " locked"));
+        node.append(
+          el("div", "adv-node-icon", cleared ? "✅" : unlocked ? lvl.icon : "🔒"),
+          el("div", "adv-node-name", lvl.name),
+          el("div", "adv-node-obj", objectiveText(lvl.objective))
+        );
+        if (unlocked) node.addEventListener("click", () => { hide(mapEl); beginLevel(lvl); });
+        else node.disabled = true;
+        grid.appendChild(node);
+      });
+      if (ch.locked) grid.appendChild(el("div", "adv-coming", "More levels coming soon…"));
+      chEl.appendChild(grid);
+      body.appendChild(chEl);
+    });
+    show(mapEl);
+  }
+
+  // ---- dialogue ---------------------------------------------------------
+  function ensureStory() {
+    if (storyEl) return storyEl;
+    storyEl = el("div", "overlay story-overlay");
+    storyEl.innerHTML = '<div class="story-box"><div class="story-avatar" id="stAva">🧑</div><div class="story-name" id="stName"></div><div class="story-text" id="stText"></div><div class="story-tap">tap to continue ▸</div></div>';
+    document.body.appendChild(storyEl);
+    return storyEl;
+  }
+  function playDialogue(lines, onDone) {
+    if (!lines || !lines.length) { onDone(); return; }
+    ensureStory();
+    let i = 0;
+    const render = () => {
+      const line = lines[i];
+      const ch = CHARS[line.who] || CHARS.you;
+      storyEl.querySelector("#stAva").textContent = ch.avatar;
+      storyEl.querySelector("#stName").textContent = ch.name;
+      storyEl.querySelector("#stText").textContent = line.text;
+    };
+    const advance = () => {
+      i++;
+      if (i >= lines.length) { storyEl.removeEventListener("click", advance); hide(storyEl); onDone(); }
+      else { render(); if (Nertz.audio) Nertz.audio.play("select"); }
+    };
+    render();
+    storyEl.addEventListener("click", advance);
+    show(storyEl);
+  }
+
+  // ---- flow -------------------------------------------------------------
+  function beginLevel(level) {
+    playDialogue(level.intro, () => { if (hooks.onStartLevel) hooks.onStartLevel(level); });
+  }
+
+  // Called by main when an adventure round ends.
+  function finishLevel(level, ctx) {
+    const passed = objectivePass(level.objective, ctx);
+    const save = hooks.getSave();
+    if (passed && !isCleared(save, level.id)) {
+      save.adventure = save.adventure || { cleared: {} };
+      save.adventure.cleared = save.adventure.cleared || {};
+      save.adventure.cleared[level.id] = { score: ctx.score, at: ctx.stamp || 0 };
+      if (level.reward && hooks.grantReward) hooks.grantReward(level.reward);
+      if (hooks.saveProgress) hooks.saveProgress();
+    }
+    const lines = (passed ? level.win : level.lose).slice();
+    const banner = { who: "you", text: passed
+      ? "★ Objective complete — " + objectiveText(level.objective) + (level.reward ? "  (+" + level.reward.xp + " XP, +" + level.reward.coins + " ◈)" : "")
+      : "✗ Objective missed — " + objectiveText(level.objective) + " Try again!" };
+    lines.push(banner);
+    playDialogue(lines, () => { renderMap(); });
+  }
+
+  function open() { renderMap(); }
+  function show(o) { o.classList.add("show"); }
+  function hide(o) { o.classList.remove("show"); }
+
+  Nertz.adventure = { init, open, finishLevel, levelById, isUnlocked, objectiveText, CHAPTERS, CHARS };
+})(typeof window !== "undefined" ? window : this);
+
+</script>
+  <script>
 /* ui.js — rendering, pointer interaction (drag + tap), overlays & FX. */
 (function (g) {
   "use strict";
@@ -1219,14 +1683,55 @@ body.theme-has-assets .card.face-down::after { content: none; }
     if (!card.faceUp) { e.classList.add("face-down"); return e; }
     if (card.color === "red") e.classList.add("red");
     e.dataset.cardId = card.id;
+
+    // corner indices (top-left, and bottom-right rotated 180°)
     const tl = el("div", "corner tl");
     tl.append(el("span", "c-rank", card.label), el("span", "c-suit", card.symbol));
     const br = el("div", "corner br");
     br.append(el("span", "c-rank", card.label), el("span", "c-suit", card.symbol));
-    const center = el("div", "pip-center", card.symbol);
-    e.append(tl, center, br);
+    e.append(tl, br);
+
+    const rank = card.rank;
+    if (rank === 1) {
+      // Ace — one large ornate centre pip
+      const field = el("div", "pip-field");
+      const p = el("div", "pip ace-pip", card.symbol);
+      p.style.left = "50%"; p.style.top = "50%";
+      field.appendChild(p);
+      e.append(field);
+    } else if (rank >= 11) {
+      // Court card — typographic monogram + faint suit watermark
+      e.classList.add("court-card");
+      const wm = el("div", "court-wm", card.symbol);
+      const court = el("div", "court");
+      court.append(el("div", "court-letter", card.label), el("div", "court-suit", card.symbol));
+      e.append(wm, court);
+    } else {
+      // Number card — classic pip layout
+      const field = el("div", "pip-field");
+      (PIPS[rank] || []).forEach(([x, y]) => {
+        const p = el("div", "pip" + (y > 0.5 ? " flip" : ""), card.symbol);
+        p.style.left = x * 100 + "%";
+        p.style.top = y * 100 + "%";
+        field.appendChild(p);
+      });
+      e.append(field);
+    }
     return e;
   }
+
+  // Classic French-deck pip positions: [xFrac(0|.5|1), yFrac]. y>0.5 → rotated.
+  const PIPS = {
+    2: [[.5, .10], [.5, .90]],
+    3: [[.5, .10], [.5, .5], [.5, .90]],
+    4: [[0, .12], [1, .12], [0, .88], [1, .88]],
+    5: [[0, .12], [1, .12], [.5, .5], [0, .88], [1, .88]],
+    6: [[0, .12], [1, .12], [0, .5], [1, .5], [0, .88], [1, .88]],
+    7: [[0, .12], [1, .12], [.5, .31], [0, .5], [1, .5], [0, .88], [1, .88]],
+    8: [[0, .12], [1, .12], [.5, .31], [0, .5], [1, .5], [.5, .69], [0, .88], [1, .88]],
+    9: [[0, .12], [1, .12], [0, .38], [1, .38], [.5, .5], [0, .62], [1, .62], [0, .88], [1, .88]],
+    10: [[0, .12], [1, .12], [.5, .26], [0, .38], [1, .38], [0, .62], [1, .62], [.5, .74], [0, .88], [1, .88]],
+  };
 
   class UI {
     constructor() {
@@ -1446,22 +1951,55 @@ body.theme-has-assets .card.face-down::after { content: none; }
     }
 
     // ============ FX ============
-    // Fly a card face from `fromRect` to `toRect`, then reveal the real card.
-    // cardData: {label, symbol, color}. opts: {destEl, duration, onDone, spin}
-    flyCard(cardData, fromRect, toRect, opts) {
-      opts = opts || {};
-      const done = () => { if (opts.destEl) { opts.destEl.style.visibility = ""; opts.destEl.classList.add("just-played"); setTimeout(() => opts.destEl && opts.destEl.classList.remove("just-played"), 360); } if (opts.onDone) opts.onDone(); };
-      if (!fromRect || !toRect || document.body.classList.contains("reduce-motion")) { done(); return; }
+    _foundationCardEl(id) { return document.querySelector('#foundations [data-card-id="' + id + '"]'); }
 
-      const c = cardEl({ label: cardData.label, symbol: cardData.symbol, color: cardData.color, faceUp: true });
+    // Queue a card's flight to its foundation. Flights run ONE AT A TIME so two
+    // cards never animate to the centre simultaneously — each play reads as a
+    // distinct action. The destination is re-resolved by card id at draw time.
+    queueFlight(card, fromRect, opts) {
+      opts = opts || {};
+      if (!this._flightQ) this._flightQ = [];
+      const reduce = document.body.classList.contains("reduce-motion");
+      if (!card || !fromRect || reduce) { this._popDest(card && card.id); if (opts.onDone) opts.onDone(); return; }
+      // hide the placed card now so it doesn't show before its flight lands
+      const destEl = this._foundationCardEl(card.id);
+      if (destEl) destEl.style.visibility = "hidden";
+      this._flightQ.push({ card, fromRect, opts });
+      this._drainFlights();
+    }
+
+    _drainFlights() {
+      if (this._flying || !this._flightQ || !this._flightQ.length) return;
+      const job = this._flightQ.shift();
+      const destEl = this._foundationCardEl(job.card.id);
+      if (!destEl) { this._drainFlights(); return; } // already buried — skip
+      this._flying = true;
+      destEl.style.visibility = "hidden";
+      const r = destEl.getBoundingClientRect();
+      this._animateFly(job.card, job.fromRect, r, () => {
+        destEl.style.visibility = "";
+        destEl.classList.add("just-played");
+        setTimeout(() => destEl.classList.remove("just-played"), 360);
+        if (job.opts.onDone) job.opts.onDone();
+        this._flying = false;
+        this._drainFlights();
+      }, job.opts);
+    }
+
+    _popDest(id) {
+      const el2 = id && this._foundationCardEl(id);
+      if (el2) { el2.style.visibility = ""; el2.classList.add("just-played"); setTimeout(() => el2.classList.remove("just-played"), 360); }
+    }
+
+    _animateFly(cardData, fromRect, toRect, onComplete, opts) {
+      opts = opts || {};
+      const c = cardEl({ label: cardData.label, symbol: cardData.symbol, color: cardData.color, rank: cardData.rank, faceUp: true });
       c.classList.add("fly-card");
       c.style.position = "fixed";
       c.style.left = "0"; c.style.top = "0"; c.style.margin = "0";
       c.style.width = fromRect.width + "px";
       c.style.height = fromRect.height + "px";
       document.body.appendChild(c);
-
-      if (opts.destEl) opts.destEl.style.visibility = "hidden"; // hide until the flight lands
 
       const sx = fromRect.left, sy = fromRect.top;
       const ex = toRect.left + (toRect.width - fromRect.width) / 2;
@@ -1476,8 +2014,8 @@ body.theme-has-assets .card.face-down::after { content: none; }
         ],
         { duration: opts.duration || 440, easing: "cubic-bezier(.34,.65,.25,1)", fill: "forwards" }
       );
-      anim.onfinish = () => { c.remove(); done(); };
-      anim.oncancel = () => { c.remove(); done(); };
+      const fin = () => { c.remove(); onComplete(); };
+      anim.onfinish = fin; anim.oncancel = fin;
     }
 
     toast(msg, gold) {
@@ -1562,6 +2100,25 @@ body.theme-has-assets .card.face-down::after { content: none; }
     wireNav();
     wireGameHud();
     wireResult();
+    Nertz.adventure.init({
+      getSave: () => App.save,
+      onStartLevel: (level) => { App.adventureLevel = level; startGame("adventure"); },
+      grantReward: (reward) => grantAdventureReward(reward),
+      saveProgress: () => { Nertz.store.save(App.save); refreshLevelChip(); },
+      onExit: () => {},
+    });
+    // browsers require a user gesture before audio can start
+    document.addEventListener("pointerdown", () => Nertz.audio.unlock(), { once: true });
+  }
+
+  function grantAdventureReward(reward) {
+    const up = prog.grantRewards(App.save, { xp: reward.xp || 0, coins: reward.coins || 0 });
+    prog.checkAchievements(App.save);
+    Nertz.store.save(App.save);
+    refreshLevelChip();
+    if (reward.unlockTheme) App.ui.toast("🎨 Unlocked the " + Nertz.themes.byId(reward.unlockTheme).name + " table!", true);
+    if (reward.title) App.ui.toast("🏷️ Title earned: " + reward.title, true);
+    if (up.leveledUp) { App.ui.toast("Level up! You reached level " + up.to + " 🎉", true); sfx("levelup"); }
   }
 
   function applySettings() {
@@ -1569,6 +2126,7 @@ body.theme-has-assets .card.face-down::after { content: none; }
     document.body.classList.toggle("left-handed", !!s.leftHanded);
     document.body.classList.toggle("reduce-motion", !!s.reduceMotion);
     Nertz.themes.apply(s.theme || "classic");
+    Nertz.audio.setEnabled(s.sound !== false);
   }
 
   function refreshLevelChip() {
@@ -1583,9 +2141,33 @@ body.theme-has-assets .card.face-down::after { content: none; }
   // ============ menu ============
   function wireMenu() {
     document.querySelectorAll(".mode-card").forEach((btn) =>
-      btn.addEventListener("click", () => startGame(btn.dataset.mode)));
+      btn.addEventListener("click", () => startMode(btn.dataset.mode)));
     wireSeg("#cfgOpponents", (v) => (App.cfg.opponents = parseInt(v, 10)));
     wireSeg("#cfgDifficulty", (v) => (App.cfg.difficulty = v));
+  }
+
+  // Adventure opens its own map; everything else starts a round immediately.
+  function startMode(mode) {
+    Nertz.audio.unlock();
+    if (mode === "adventure") { Nertz.adventure.open(); return; }
+    startGame(mode);
+  }
+
+  const MODE_BANNERS = {
+    fast: "⚡ Fast Play · first to empty Nertz wins",
+    ranked: "🏁 Ranked Race · earns XP + leaderboard",
+    daily: "📅 Daily Challenge · same deal for everyone",
+    zen: "🌙 Zen Solo · no bots, no pressure",
+  };
+  function updateModeBanner() {
+    const b = $("#modeBanner");
+    if (App.mode === "adventure" && App.adventureLevel) {
+      const lv = App.adventureLevel;
+      b.textContent = "🗺️ " + lv.name + " · Goal: " + Nertz.adventure.objectiveText(lv.objective);
+    } else {
+      b.textContent = MODE_BANNERS[App.mode] || "";
+    }
+    b.className = "mode-banner mode-" + App.mode + (b.textContent ? " show" : "");
   }
 
   function wireSeg(sel, onChange) {
@@ -1614,11 +2196,8 @@ body.theme-has-assets .card.face-down::after { content: none; }
     App.foundations = [];
     const isZen = mode === "zen";
     const isDaily = mode === "daily";
+    const isAdv = mode === "adventure";
     App.isReplay = false;
-
-    // The difficulty actually used this round (Daily always uses normal bots),
-    // so rewards/achievements match what was played, not the menu selection.
-    App.roundDifficulty = isDaily ? "normal" : App.cfg.difficulty;
 
     let rng = Math.random;
     if (isDaily) {
@@ -1630,6 +2209,20 @@ body.theme-has-assets .card.face-down::after { content: none; }
       rng = D.seededRng(seed);
     }
 
+    // ---- per-mode opponent line-up (clear variance between modes) ----
+    let botSpecs = [];
+    if (isAdv && App.adventureLevel) {
+      botSpecs = App.adventureLevel.bots.map((b) => ({ name: b.name, avatar: b.avatar, difficulty: b.difficulty }));
+    } else if (!isZen) {
+      const n = mode === "fast" ? 1 : isDaily ? 2 : App.cfg.opponents; // Fast = single bot, Ranked = your pick
+      const diff = isDaily ? "normal" : App.cfg.difficulty;
+      for (let i = 0; i < n; i++) {
+        botSpecs.push({ name: Nertz.PROFILES[diff].name + " " + (i + 1), avatar: Nertz.AVATARS[i % Nertz.AVATARS.length], difficulty: diff });
+      }
+    }
+    // difficulty used this round, for reward scaling/achievements
+    App.roundDifficulty = botSpecs.length ? botSpecs[botSpecs.length - 1].difficulty : "normal";
+
     // engine for the human
     App.engine = new Nertz.Engine({
       rng, playerId: "you", foundations: App.foundations,
@@ -1639,25 +2232,14 @@ body.theme-has-assets .card.face-down::after { content: none; }
     App.engine.on("foundation", () => { App.ui.render(App.engine); pulseLeader(); });
     App.engine.on("nertz", () => endRound("you"));
 
-    // bots
-    App.bots = [];
-    if (!isZen) {
-      const n = isDaily ? 2 : App.cfg.opponents;
-      const diff = App.roundDifficulty;
-      for (let i = 0; i < n; i++) {
-        const bot = new Nertz.Bot({
-          id: "bot" + i,
-          name: Nertz.PROFILES[diff].name + " " + (i + 1),
-          avatar: Nertz.AVATARS[i % Nertz.AVATARS.length],
-          difficulty: diff,
-          foundations: App.foundations,
-          rng: isDaily ? D.seededRng(dailySeed() + 7919 * (i + 1)) : Math.random,
-          onPlay: onBotPlay,
-        });
-        App.bots.push(bot);
-      }
-    }
+    App.bots = botSpecs.map((s, i) => new Nertz.Bot({
+      id: "bot" + i, name: s.name, avatar: s.avatar, difficulty: s.difficulty,
+      foundations: App.foundations,
+      rng: isDaily ? D.seededRng(dailySeed() + 7919 * (i + 1)) : Math.random,
+      onPlay: onBotPlay,
+    }));
 
+    updateModeBanner();
     showScreen("game");
     App.ui.render(App.engine);
     App.ui.renderOpponents(App.bots, leaderId());
@@ -1688,17 +2270,16 @@ body.theme-has-assets .card.face-down::after { content: none; }
     const fromRect = fromEl ? fromEl.getBoundingClientRect() : null;
     App.ui.render(App.engine);
     App.ui.renderOpponents(App.bots, leaderId());
+    sfx("deal");
     flyToFoundation(ev.card, fromRect, true);
     if (ev.bot.nertzRemaining() === 0) endRound(ev.bot.id);
   }
 
-  // Animate a just-played card flying from `fromRect` to its foundation slot.
+  // Queue a just-played card's flight to its foundation (serialized in the UI
+  // so only one card animates to the centre at a time).
   function flyToFoundation(card, fromRect, isBot) {
-    if (!card) return;
-    const destEl = document.querySelector('#foundations [data-card-id="' + card.id + '"]');
-    if (!destEl || !fromRect) return;
-    const toRect = destEl.getBoundingClientRect();
-    App.ui.flyCard(card, fromRect, toRect, { destEl: destEl, duration: isBot ? 520 : 380, spin: isBot ? -9 : 9 });
+    if (!card || !fromRect) return;
+    App.ui.queueFlight(card, fromRect, { duration: isBot ? 520 : 380, spin: isBot ? -9 : 9 });
   }
 
   function leaderId() {
@@ -1727,7 +2308,7 @@ body.theme-has-assets .card.face-down::after { content: none; }
     if (!App.running) return;
     const card = App.engine.peek(source); // capture identity before the move
     if (App.engine.playToFoundation(source)) {
-      App.ui.render(App.engine); syncHud(); beep(660);
+      App.ui.render(App.engine); syncHud(); sfx("foundation");
       flyToFoundation(card, fromRect, false);
     }
   }
@@ -1738,7 +2319,7 @@ body.theme-has-assets .card.face-down::after { content: none; }
     if (toFoundation) ok = App.engine.playToFoundation(source);
     else if (target.zone === "work") ok = App.engine.moveToWork(source, target.pileIndex);
     if (ok) {
-      App.ui.render(App.engine); syncHud(); beep(toFoundation ? 660 : 520);
+      App.ui.render(App.engine); syncHud(); sfx(toFoundation ? "foundation" : "play");
       if (toFoundation) flyToFoundation(card, fromRect, false);
     }
   }
@@ -1746,7 +2327,7 @@ body.theme-has-assets .card.face-down::after { content: none; }
     if (!App.running) return;
     App.engine.flipStock();
     App.ui.render(App.engine);
-    beep(420);
+    sfx("flip");
   }
 
   // ============ end of round ============
@@ -1769,9 +2350,21 @@ body.theme-has-assets .card.face-down::after { content: none; }
     players.sort((a, b) => b.score - a.score);
 
     const me = players.find((p) => p.isYou);
-    const youWon = winnerId === "you" || (App.mode === "zen" && me.nertz === 0);
-    const beatHard = youWon && App.roundDifficulty === "hard" && App.mode !== "zen";
+    const youWon = winnerId === "you" || (App.bots.length === 0 && me.nertz === 0);
 
+    // Adventure: count light stats, then hand off to the campaign's own
+    // objective check + outro dialogue (rewards come from the level).
+    if (App.mode === "adventure" && App.adventureLevel) {
+      const s = App.save.stats;
+      s.gamesPlayed++; s.totalFoundationCards += me.founded;
+      if (s.bestScore == null || me.score > s.bestScore) s.bestScore = me.score;
+      Nertz.store.save(App.save);
+      Nertz.adventure.finishLevel(App.adventureLevel, { won: youWon, score: me.score, founded: me.founded, timeMs: timeMs });
+      if (youWon) { App.ui.confetti(); sfx("win"); } else { sfx("lose"); }
+      return;
+    }
+
+    const beatHard = youWon && App.roundDifficulty === "hard" && App.mode !== "zen";
     updateProgress(me, youWon, timeMs, beatHard);
     showResult(players, me, youWon, timeMs);
   }
@@ -1849,8 +2442,8 @@ body.theme-has-assets .card.face-down::after { content: none; }
 
     $("#overlayRound").classList.add("show");
 
-    if (won) App.ui.confetti();
-    if (App._levelUp.leveledUp) setTimeout(() => App.ui.toast("Level up! You reached level " + App._levelUp.to + " 🎉", true), 500);
+    if (won) { App.ui.confetti(); sfx("win"); } else { sfx("lose"); }
+    if (App._levelUp.leveledUp) setTimeout(() => { App.ui.toast("Level up! You reached level " + App._levelUp.to + " 🎉", true); sfx("levelup"); }, 500);
     (App._unlocked || []).forEach((a, i) =>
       setTimeout(() => App.ui.toast(a.icon + "  Unlocked: " + a.name, true), 900 + i * 700));
   }
@@ -1891,7 +2484,7 @@ body.theme-has-assets .card.face-down::after { content: none; }
       for (let i = 0; i < 4; i++) tries.push({ zone: "work", pileIndex: i, cardIndex: App.engine.work[i].length - 1 });
       for (const s of tries) if (App.engine.playToFoundation(s)) { moved = true; total++; }
     }
-    if (total) { App.ui.render(App.engine); syncHud(); beep(720); App.ui.toast("Auto-played " + total + " card" + (total > 1 ? "s" : "") + " ⤴"); }
+    if (total) { App.ui.render(App.engine); syncHud(); sfx("foundation"); App.ui.toast("Auto-played " + total + " card" + (total > 1 ? "s" : "") + " ⤴"); }
     else App.ui.toast("Nothing to auto-play right now");
   }
 
@@ -2071,21 +2664,8 @@ body.theme-has-assets .card.face-down::after { content: none; }
     return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
   }
 
-  // tiny WebAudio blip (respects sound setting)
-  let _actx = null;
-  function beep(freq) {
-    if (!App.save.settings.sound) return;
-    try {
-      _actx = _actx || new (window.AudioContext || window.webkitAudioContext)();
-      const o = _actx.createOscillator(), gnode = _actx.createGain();
-      o.frequency.value = freq; o.type = "sine";
-      gnode.gain.value = 0.04;
-      o.connect(gnode); gnode.connect(_actx.destination);
-      o.start();
-      gnode.gain.exponentialRampToValueAtTime(0.0001, _actx.currentTime + 0.12);
-      o.stop(_actx.currentTime + 0.13);
-    } catch (e) { /* no audio */ }
-  }
+  // route game events to the synth sound module
+  function sfx(type) { Nertz.audio.play(type); }
 
   g.NertzApp = App; // debug handle (inspect game state from the console)
 

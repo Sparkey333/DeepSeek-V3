@@ -44,13 +44,27 @@ onto the **shared foundations** in the middle.
 
 | Mode | Description |
 |------|-------------|
-| ⚡ **Fast Play** | One quick round vs the bots. Jump straight in. |
-| 🏁 **Ranked Race** | Same game, but results feed XP, levels & the leaderboard. |
-| 📅 **Daily Challenge** | A deterministic daily shuffle — everyone gets the same deal. |
+| ⚡ **Fast Play** | One quick round vs a single bot. Jump straight in. |
+| 🗺️ **Adventure** | *Shuffleton Story* — a cozy career campaign with rivals, dialogue, and per-level objectives (à la Golf Story). |
+| 🏁 **Ranked Race** | Full table (1–3 bots). Results feed XP, levels & the leaderboard. |
+| 📅 **Daily Challenge** | A deterministic daily shuffle — everyone gets the same deal. One ranked shot a day. |
 | 🌙 **Zen Solo** | No bots, no pressure. Practice the patience layer solo. |
 
 Configure **opponents (1–3)** and **difficulty (Rookie / Sharp / Ace)** from the
-menu.
+menu (Ranked). Each mode has a distinct line-up and an in-game banner.
+
+### Adventure: Shuffleton Story
+Return to your seaside hometown and revive the faded **Riffle Room** Nertz club.
+Chapter 1 (*Back to Shuffleton*) has four levels — learn from Gran Marge, out-deal
+Rusty at the bait shop, survive the Tabby Twins, and face Mayor Aces on the pier —
+each with intro/outro dialogue, an objective (win / score / time), and rewards
+(XP, coins, theme unlocks). The framework is built to keep adding chapters.
+
+### Polish
+- **Real card faces** — classic French-deck pip layouts, court-card monograms, ornate aces.
+- **Card flights** — every play (yours and each bot's) animates to the centre, **one at a time**.
+- **Sound** — synthesized card snaps, chimes, and fanfares (no asset files; respects the Sound setting).
+- **Themes** — six table skins: Classic Felt, Midnight Neon, Royal Velvet, Sakura, Forest, Noir.
 
 ## Progression & gamification
 

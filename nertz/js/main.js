@@ -32,6 +32,25 @@
     wireNav();
     wireGameHud();
     wireResult();
+    Nertz.adventure.init({
+      getSave: () => App.save,
+      onStartLevel: (level) => { App.adventureLevel = level; startGame("adventure"); },
+      grantReward: (reward) => grantAdventureReward(reward),
+      saveProgress: () => { Nertz.store.save(App.save); refreshLevelChip(); },
+      onExit: () => {},
+    });
+    // browsers require a user gesture before audio can start
+    document.addEventListener("pointerdown", () => Nertz.audio.unlock(), { once: true });
+  }
+
+  function grantAdventureReward(reward) {
+    const up = prog.grantRewards(App.save, { xp: reward.xp || 0, coins: reward.coins || 0 });
+    prog.checkAchievements(App.save);
+    Nertz.store.save(App.save);
+    refreshLevelChip();
+    if (reward.unlockTheme) App.ui.toast("🎨 Unlocked the " + Nertz.themes.byId(reward.unlockTheme).name + " table!", true);
+    if (reward.title) App.ui.toast("🏷️ Title earned: " + reward.title, true);
+    if (up.leveledUp) { App.ui.toast("Level up! You reached level " + up.to + " 🎉", true); sfx("levelup"); }
   }
 
   function applySettings() {
@@ -39,6 +58,7 @@
     document.body.classList.toggle("left-handed", !!s.leftHanded);
     document.body.classList.toggle("reduce-motion", !!s.reduceMotion);
     Nertz.themes.apply(s.theme || "classic");
+    Nertz.audio.setEnabled(s.sound !== false);
   }
 
   function refreshLevelChip() {
@@ -53,9 +73,33 @@
   // ============ menu ============
   function wireMenu() {
     document.querySelectorAll(".mode-card").forEach((btn) =>
-      btn.addEventListener("click", () => startGame(btn.dataset.mode)));
+      btn.addEventListener("click", () => startMode(btn.dataset.mode)));
     wireSeg("#cfgOpponents", (v) => (App.cfg.opponents = parseInt(v, 10)));
     wireSeg("#cfgDifficulty", (v) => (App.cfg.difficulty = v));
+  }
+
+  // Adventure opens its own map; everything else starts a round immediately.
+  function startMode(mode) {
+    Nertz.audio.unlock();
+    if (mode === "adventure") { Nertz.adventure.open(); return; }
+    startGame(mode);
+  }
+
+  const MODE_BANNERS = {
+    fast: "⚡ Fast Play · first to empty Nertz wins",
+    ranked: "🏁 Ranked Race · earns XP + leaderboard",
+    daily: "📅 Daily Challenge · same deal for everyone",
+    zen: "🌙 Zen Solo · no bots, no pressure",
+  };
+  function updateModeBanner() {
+    const b = $("#modeBanner");
+    if (App.mode === "adventure" && App.adventureLevel) {
+      const lv = App.adventureLevel;
+      b.textContent = "🗺️ " + lv.name + " · Goal: " + Nertz.adventure.objectiveText(lv.objective);
+    } else {
+      b.textContent = MODE_BANNERS[App.mode] || "";
+    }
+    b.className = "mode-banner mode-" + App.mode + (b.textContent ? " show" : "");
   }
 
   function wireSeg(sel, onChange) {
@@ -84,11 +128,8 @@
     App.foundations = [];
     const isZen = mode === "zen";
     const isDaily = mode === "daily";
+    const isAdv = mode === "adventure";
     App.isReplay = false;
-
-    // The difficulty actually used this round (Daily always uses normal bots),
-    // so rewards/achievements match what was played, not the menu selection.
-    App.roundDifficulty = isDaily ? "normal" : App.cfg.difficulty;
 
     let rng = Math.random;
     if (isDaily) {
@@ -100,6 +141,20 @@
       rng = D.seededRng(seed);
     }
 
+    // ---- per-mode opponent line-up (clear variance between modes) ----
+    let botSpecs = [];
+    if (isAdv && App.adventureLevel) {
+      botSpecs = App.adventureLevel.bots.map((b) => ({ name: b.name, avatar: b.avatar, difficulty: b.difficulty }));
+    } else if (!isZen) {
+      const n = mode === "fast" ? 1 : isDaily ? 2 : App.cfg.opponents; // Fast = single bot, Ranked = your pick
+      const diff = isDaily ? "normal" : App.cfg.difficulty;
+      for (let i = 0; i < n; i++) {
+        botSpecs.push({ name: Nertz.PROFILES[diff].name + " " + (i + 1), avatar: Nertz.AVATARS[i % Nertz.AVATARS.length], difficulty: diff });
+      }
+    }
+    // difficulty used this round, for reward scaling/achievements
+    App.roundDifficulty = botSpecs.length ? botSpecs[botSpecs.length - 1].difficulty : "normal";
+
     // engine for the human
     App.engine = new Nertz.Engine({
       rng, playerId: "you", foundations: App.foundations,
@@ -109,25 +164,14 @@
     App.engine.on("foundation", () => { App.ui.render(App.engine); pulseLeader(); });
     App.engine.on("nertz", () => endRound("you"));
 
-    // bots
-    App.bots = [];
-    if (!isZen) {
-      const n = isDaily ? 2 : App.cfg.opponents;
-      const diff = App.roundDifficulty;
-      for (let i = 0; i < n; i++) {
-        const bot = new Nertz.Bot({
-          id: "bot" + i,
-          name: Nertz.PROFILES[diff].name + " " + (i + 1),
-          avatar: Nertz.AVATARS[i % Nertz.AVATARS.length],
-          difficulty: diff,
-          foundations: App.foundations,
-          rng: isDaily ? D.seededRng(dailySeed() + 7919 * (i + 1)) : Math.random,
-          onPlay: onBotPlay,
-        });
-        App.bots.push(bot);
-      }
-    }
+    App.bots = botSpecs.map((s, i) => new Nertz.Bot({
+      id: "bot" + i, name: s.name, avatar: s.avatar, difficulty: s.difficulty,
+      foundations: App.foundations,
+      rng: isDaily ? D.seededRng(dailySeed() + 7919 * (i + 1)) : Math.random,
+      onPlay: onBotPlay,
+    }));
 
+    updateModeBanner();
     showScreen("game");
     App.ui.render(App.engine);
     App.ui.renderOpponents(App.bots, leaderId());
@@ -158,17 +202,16 @@
     const fromRect = fromEl ? fromEl.getBoundingClientRect() : null;
     App.ui.render(App.engine);
     App.ui.renderOpponents(App.bots, leaderId());
+    sfx("deal");
     flyToFoundation(ev.card, fromRect, true);
     if (ev.bot.nertzRemaining() === 0) endRound(ev.bot.id);
   }
 
-  // Animate a just-played card flying from `fromRect` to its foundation slot.
+  // Queue a just-played card's flight to its foundation (serialized in the UI
+  // so only one card animates to the centre at a time).
   function flyToFoundation(card, fromRect, isBot) {
-    if (!card) return;
-    const destEl = document.querySelector('#foundations [data-card-id="' + card.id + '"]');
-    if (!destEl || !fromRect) return;
-    const toRect = destEl.getBoundingClientRect();
-    App.ui.flyCard(card, fromRect, toRect, { destEl: destEl, duration: isBot ? 520 : 380, spin: isBot ? -9 : 9 });
+    if (!card || !fromRect) return;
+    App.ui.queueFlight(card, fromRect, { duration: isBot ? 520 : 380, spin: isBot ? -9 : 9 });
   }
 
   function leaderId() {
@@ -197,7 +240,7 @@
     if (!App.running) return;
     const card = App.engine.peek(source); // capture identity before the move
     if (App.engine.playToFoundation(source)) {
-      App.ui.render(App.engine); syncHud(); beep(660);
+      App.ui.render(App.engine); syncHud(); sfx("foundation");
       flyToFoundation(card, fromRect, false);
     }
   }
@@ -208,7 +251,7 @@
     if (toFoundation) ok = App.engine.playToFoundation(source);
     else if (target.zone === "work") ok = App.engine.moveToWork(source, target.pileIndex);
     if (ok) {
-      App.ui.render(App.engine); syncHud(); beep(toFoundation ? 660 : 520);
+      App.ui.render(App.engine); syncHud(); sfx(toFoundation ? "foundation" : "play");
       if (toFoundation) flyToFoundation(card, fromRect, false);
     }
   }
@@ -216,7 +259,7 @@
     if (!App.running) return;
     App.engine.flipStock();
     App.ui.render(App.engine);
-    beep(420);
+    sfx("flip");
   }
 
   // ============ end of round ============
@@ -239,9 +282,21 @@
     players.sort((a, b) => b.score - a.score);
 
     const me = players.find((p) => p.isYou);
-    const youWon = winnerId === "you" || (App.mode === "zen" && me.nertz === 0);
-    const beatHard = youWon && App.roundDifficulty === "hard" && App.mode !== "zen";
+    const youWon = winnerId === "you" || (App.bots.length === 0 && me.nertz === 0);
 
+    // Adventure: count light stats, then hand off to the campaign's own
+    // objective check + outro dialogue (rewards come from the level).
+    if (App.mode === "adventure" && App.adventureLevel) {
+      const s = App.save.stats;
+      s.gamesPlayed++; s.totalFoundationCards += me.founded;
+      if (s.bestScore == null || me.score > s.bestScore) s.bestScore = me.score;
+      Nertz.store.save(App.save);
+      Nertz.adventure.finishLevel(App.adventureLevel, { won: youWon, score: me.score, founded: me.founded, timeMs: timeMs });
+      if (youWon) { App.ui.confetti(); sfx("win"); } else { sfx("lose"); }
+      return;
+    }
+
+    const beatHard = youWon && App.roundDifficulty === "hard" && App.mode !== "zen";
     updateProgress(me, youWon, timeMs, beatHard);
     showResult(players, me, youWon, timeMs);
   }
@@ -319,8 +374,8 @@
 
     $("#overlayRound").classList.add("show");
 
-    if (won) App.ui.confetti();
-    if (App._levelUp.leveledUp) setTimeout(() => App.ui.toast("Level up! You reached level " + App._levelUp.to + " 🎉", true), 500);
+    if (won) { App.ui.confetti(); sfx("win"); } else { sfx("lose"); }
+    if (App._levelUp.leveledUp) setTimeout(() => { App.ui.toast("Level up! You reached level " + App._levelUp.to + " 🎉", true); sfx("levelup"); }, 500);
     (App._unlocked || []).forEach((a, i) =>
       setTimeout(() => App.ui.toast(a.icon + "  Unlocked: " + a.name, true), 900 + i * 700));
   }
@@ -361,7 +416,7 @@
       for (let i = 0; i < 4; i++) tries.push({ zone: "work", pileIndex: i, cardIndex: App.engine.work[i].length - 1 });
       for (const s of tries) if (App.engine.playToFoundation(s)) { moved = true; total++; }
     }
-    if (total) { App.ui.render(App.engine); syncHud(); beep(720); App.ui.toast("Auto-played " + total + " card" + (total > 1 ? "s" : "") + " ⤴"); }
+    if (total) { App.ui.render(App.engine); syncHud(); sfx("foundation"); App.ui.toast("Auto-played " + total + " card" + (total > 1 ? "s" : "") + " ⤴"); }
     else App.ui.toast("Nothing to auto-play right now");
   }
 
@@ -541,21 +596,8 @@
     return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
   }
 
-  // tiny WebAudio blip (respects sound setting)
-  let _actx = null;
-  function beep(freq) {
-    if (!App.save.settings.sound) return;
-    try {
-      _actx = _actx || new (window.AudioContext || window.webkitAudioContext)();
-      const o = _actx.createOscillator(), gnode = _actx.createGain();
-      o.frequency.value = freq; o.type = "sine";
-      gnode.gain.value = 0.04;
-      o.connect(gnode); gnode.connect(_actx.destination);
-      o.start();
-      gnode.gain.exponentialRampToValueAtTime(0.0001, _actx.currentTime + 0.12);
-      o.stop(_actx.currentTime + 0.13);
-    } catch (e) { /* no audio */ }
-  }
+  // route game events to the synth sound module
+  function sfx(type) { Nertz.audio.play(type); }
 
   g.NertzApp = App; // debug handle (inspect game state from the console)
 

@@ -19,14 +19,55 @@
     if (!card.faceUp) { e.classList.add("face-down"); return e; }
     if (card.color === "red") e.classList.add("red");
     e.dataset.cardId = card.id;
+
+    // corner indices (top-left, and bottom-right rotated 180°)
     const tl = el("div", "corner tl");
     tl.append(el("span", "c-rank", card.label), el("span", "c-suit", card.symbol));
     const br = el("div", "corner br");
     br.append(el("span", "c-rank", card.label), el("span", "c-suit", card.symbol));
-    const center = el("div", "pip-center", card.symbol);
-    e.append(tl, center, br);
+    e.append(tl, br);
+
+    const rank = card.rank;
+    if (rank === 1) {
+      // Ace — one large ornate centre pip
+      const field = el("div", "pip-field");
+      const p = el("div", "pip ace-pip", card.symbol);
+      p.style.left = "50%"; p.style.top = "50%";
+      field.appendChild(p);
+      e.append(field);
+    } else if (rank >= 11) {
+      // Court card — typographic monogram + faint suit watermark
+      e.classList.add("court-card");
+      const wm = el("div", "court-wm", card.symbol);
+      const court = el("div", "court");
+      court.append(el("div", "court-letter", card.label), el("div", "court-suit", card.symbol));
+      e.append(wm, court);
+    } else {
+      // Number card — classic pip layout
+      const field = el("div", "pip-field");
+      (PIPS[rank] || []).forEach(([x, y]) => {
+        const p = el("div", "pip" + (y > 0.5 ? " flip" : ""), card.symbol);
+        p.style.left = x * 100 + "%";
+        p.style.top = y * 100 + "%";
+        field.appendChild(p);
+      });
+      e.append(field);
+    }
     return e;
   }
+
+  // Classic French-deck pip positions: [xFrac(0|.5|1), yFrac]. y>0.5 → rotated.
+  const PIPS = {
+    2: [[.5, .10], [.5, .90]],
+    3: [[.5, .10], [.5, .5], [.5, .90]],
+    4: [[0, .12], [1, .12], [0, .88], [1, .88]],
+    5: [[0, .12], [1, .12], [.5, .5], [0, .88], [1, .88]],
+    6: [[0, .12], [1, .12], [0, .5], [1, .5], [0, .88], [1, .88]],
+    7: [[0, .12], [1, .12], [.5, .31], [0, .5], [1, .5], [0, .88], [1, .88]],
+    8: [[0, .12], [1, .12], [.5, .31], [0, .5], [1, .5], [.5, .69], [0, .88], [1, .88]],
+    9: [[0, .12], [1, .12], [0, .38], [1, .38], [.5, .5], [0, .62], [1, .62], [0, .88], [1, .88]],
+    10: [[0, .12], [1, .12], [.5, .26], [0, .38], [1, .38], [0, .62], [1, .62], [.5, .74], [0, .88], [1, .88]],
+  };
 
   class UI {
     constructor() {
@@ -246,22 +287,55 @@
     }
 
     // ============ FX ============
-    // Fly a card face from `fromRect` to `toRect`, then reveal the real card.
-    // cardData: {label, symbol, color}. opts: {destEl, duration, onDone, spin}
-    flyCard(cardData, fromRect, toRect, opts) {
-      opts = opts || {};
-      const done = () => { if (opts.destEl) { opts.destEl.style.visibility = ""; opts.destEl.classList.add("just-played"); setTimeout(() => opts.destEl && opts.destEl.classList.remove("just-played"), 360); } if (opts.onDone) opts.onDone(); };
-      if (!fromRect || !toRect || document.body.classList.contains("reduce-motion")) { done(); return; }
+    _foundationCardEl(id) { return document.querySelector('#foundations [data-card-id="' + id + '"]'); }
 
-      const c = cardEl({ label: cardData.label, symbol: cardData.symbol, color: cardData.color, faceUp: true });
+    // Queue a card's flight to its foundation. Flights run ONE AT A TIME so two
+    // cards never animate to the centre simultaneously — each play reads as a
+    // distinct action. The destination is re-resolved by card id at draw time.
+    queueFlight(card, fromRect, opts) {
+      opts = opts || {};
+      if (!this._flightQ) this._flightQ = [];
+      const reduce = document.body.classList.contains("reduce-motion");
+      if (!card || !fromRect || reduce) { this._popDest(card && card.id); if (opts.onDone) opts.onDone(); return; }
+      // hide the placed card now so it doesn't show before its flight lands
+      const destEl = this._foundationCardEl(card.id);
+      if (destEl) destEl.style.visibility = "hidden";
+      this._flightQ.push({ card, fromRect, opts });
+      this._drainFlights();
+    }
+
+    _drainFlights() {
+      if (this._flying || !this._flightQ || !this._flightQ.length) return;
+      const job = this._flightQ.shift();
+      const destEl = this._foundationCardEl(job.card.id);
+      if (!destEl) { this._drainFlights(); return; } // already buried — skip
+      this._flying = true;
+      destEl.style.visibility = "hidden";
+      const r = destEl.getBoundingClientRect();
+      this._animateFly(job.card, job.fromRect, r, () => {
+        destEl.style.visibility = "";
+        destEl.classList.add("just-played");
+        setTimeout(() => destEl.classList.remove("just-played"), 360);
+        if (job.opts.onDone) job.opts.onDone();
+        this._flying = false;
+        this._drainFlights();
+      }, job.opts);
+    }
+
+    _popDest(id) {
+      const el2 = id && this._foundationCardEl(id);
+      if (el2) { el2.style.visibility = ""; el2.classList.add("just-played"); setTimeout(() => el2.classList.remove("just-played"), 360); }
+    }
+
+    _animateFly(cardData, fromRect, toRect, onComplete, opts) {
+      opts = opts || {};
+      const c = cardEl({ label: cardData.label, symbol: cardData.symbol, color: cardData.color, rank: cardData.rank, faceUp: true });
       c.classList.add("fly-card");
       c.style.position = "fixed";
       c.style.left = "0"; c.style.top = "0"; c.style.margin = "0";
       c.style.width = fromRect.width + "px";
       c.style.height = fromRect.height + "px";
       document.body.appendChild(c);
-
-      if (opts.destEl) opts.destEl.style.visibility = "hidden"; // hide until the flight lands
 
       const sx = fromRect.left, sy = fromRect.top;
       const ex = toRect.left + (toRect.width - fromRect.width) / 2;
@@ -276,8 +350,8 @@
         ],
         { duration: opts.duration || 440, easing: "cubic-bezier(.34,.65,.25,1)", fill: "forwards" }
       );
-      anim.onfinish = () => { c.remove(); done(); };
-      anim.oncancel = () => { c.remove(); done(); };
+      const fin = () => { c.remove(); onComplete(); };
+      anim.onfinish = fin; anim.oncancel = fin;
     }
 
     toast(msg, gold) {
