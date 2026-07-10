@@ -32,18 +32,18 @@
     wireNav();
     wireGameHud();
     wireResult();
-    Nertz.adventure.init({
+    Nertz.story.init({
       getSave: () => App.save,
-      onStartLevel: (level) => { App.adventureLevel = level; startGame("adventure"); },
-      grantReward: (reward) => grantAdventureReward(reward),
+      onStartNertz: (beat) => { App.storyBeat = beat; startGame("story"); },
+      grantReward: (reward) => grantStoryReward(reward),
       saveProgress: () => { Nertz.store.save(App.save); refreshLevelChip(); },
-      onExit: () => {},
+      toast: (msg, gold) => App.ui.toast(msg, gold),
     });
     // browsers require a user gesture before audio can start
     document.addEventListener("pointerdown", () => Nertz.audio.unlock(), { once: true });
   }
 
-  function grantAdventureReward(reward) {
+  function grantStoryReward(reward) {
     const up = prog.grantRewards(App.save, { xp: reward.xp || 0, coins: reward.coins || 0 });
     prog.checkAchievements(App.save);
     Nertz.store.save(App.save);
@@ -59,6 +59,11 @@
     document.body.classList.toggle("reduce-motion", !!s.reduceMotion);
     Nertz.themes.apply(s.theme || "classic");
     Nertz.audio.setEnabled(s.sound !== false);
+    // duality toggles: day/night chrome + card-face form
+    document.body.classList.toggle("day-mode", !!s.dayMode);
+    Nertz.cardForm = s.cardForm || "trad";
+    const dn = $("#btnDayNight");
+    if (dn) dn.textContent = s.dayMode ? "☀️" : "🌙";
   }
 
   function refreshLevelChip() {
@@ -81,21 +86,50 @@
   // Adventure opens its own map; everything else starts a round immediately.
   function startMode(mode) {
     Nertz.audio.unlock();
-    if (mode === "adventure") { Nertz.adventure.open(); return; }
+    if (mode === "story") { Nertz.story.open(); return; }
+    if (mode === "tournament") App.tournament = { round: 0, totals: {}, founded: 0, wins: 0 };
     startGame(mode);
   }
 
+  const TOURNAMENT_ROUNDS = 3;
+  const WILD_MUTATORS = [
+    { id: "short",  name: "Short Stack",   desc: "7-card Nertz pile",  rules: { nertzSize: 7 } },
+    { id: "tall",   name: "Tall Order",    desc: "18-card Nertz pile", rules: { nertzSize: 18 } },
+    { id: "drip",   name: "Slow Drip",     desc: "stock flips 1",      rules: { stockFlip: 1 } },
+    { id: "flood",  name: "Flood",         desc: "stock flips 5",      rules: { stockFlip: 5 } },
+    { id: "wide",   name: "Wide Table",    desc: "6 work piles",       rules: { workPiles: 6 } },
+    { id: "tight",  name: "Tight Squeeze", desc: "3 work piles",       rules: { workPiles: 3 } },
+    { id: "turbo",  name: "Turbo Bots",    desc: "bots 40% faster",    botSpeed: 1.4 },
+    { id: "sleepy", name: "Sleepy Bots",   desc: "bots 30% slower",    botSpeed: 0.7 },
+  ];
+  // Pick 2 compatible mutators (never two touching the same rule / both speeds).
+  function pickWildMutators() {
+    const pool = WILD_MUTATORS.slice();
+    const picks = [];
+    while (picks.length < 2 && pool.length) {
+      const m = pool.splice(Math.floor(Math.random() * pool.length), 1)[0];
+      if (picks.some((x) => x.rules && m.rules && Object.keys(x.rules).some((k) => m.rules[k] != null))) continue;
+      if (picks.some((x) => x.botSpeed && m.botSpeed)) continue;
+      picks.push(m);
+    }
+    return picks;
+  }
+
   const MODE_BANNERS = {
-    fast: "⚡ Fast Play · first to empty Nertz wins",
+    fast: "⚡ Fast Play · 1v1 — first to empty Nertz wins",
+    blitz: "🌀 Blitz · 7-card Nertz, single flips, turbo bot",
+    zen: "🌙 Zen Solo · no bots, no pressure",
     ranked: "🏁 Ranked Race · earns XP + leaderboard",
     daily: "📅 Daily Challenge · same deal for everyone",
-    zen: "🌙 Zen Solo · no bots, no pressure",
   };
   function updateModeBanner() {
     const b = $("#modeBanner");
-    if (App.mode === "adventure" && App.adventureLevel) {
-      const lv = App.adventureLevel;
-      b.textContent = "🗺️ " + lv.name + " · Goal: " + Nertz.adventure.objectiveText(lv.objective);
+    if (App.mode === "story" && App.storyBeat) {
+      b.textContent = "🗺️ " + App.storyBeat.title + " · " + Nertz.story.objectiveText(App.storyBeat);
+    } else if (App.mode === "wild") {
+      b.textContent = "🎲 Wild Shuffle · " + (App.wildMutators || []).map((m) => m.name).join(" + ");
+    } else if (App.mode === "tournament" && App.tournament) {
+      b.textContent = "🏆 Tournament · round " + App.tournament.round + " of " + TOURNAMENT_ROUNDS;
     } else {
       b.textContent = MODE_BANNERS[App.mode] || "";
     }
@@ -128,7 +162,7 @@
     App.foundations = [];
     const isZen = mode === "zen";
     const isDaily = mode === "daily";
-    const isAdv = mode === "adventure";
+    const isStory = mode === "story";
     App.isReplay = false;
 
     let rng = Math.random;
@@ -141,10 +175,33 @@
       rng = D.seededRng(seed);
     }
 
-    // ---- per-mode opponent line-up (clear variance between modes) ----
+    // ---- per-mode table rules & opponent line-up (real mode variance) ----
+    let rules = {};
+    let botSpeed = 1;
     let botSpecs = [];
-    if (isAdv && App.adventureLevel) {
-      botSpecs = App.adventureLevel.bots.map((b) => ({ name: b.name, avatar: b.avatar, difficulty: b.difficulty }));
+    App.xpMult = 1;
+    if (isStory && App.storyBeat) {
+      const lv = App.storyBeat.nertz;
+      rules = lv.rules || {};
+      botSpecs = lv.bots.map((b) => ({ name: b.name, avatar: b.avatar, difficulty: b.difficulty }));
+    } else if (mode === "blitz") {
+      rules = { nertzSize: 7, stockFlip: 1 };
+      botSpeed = 1.3;
+      App.xpMult = 1.15;
+      botSpecs = [{ name: "Bolt " + Nertz.PROFILES[App.cfg.difficulty].name, avatar: "⚡", difficulty: App.cfg.difficulty }];
+    } else if (mode === "wild") {
+      App.wildMutators = pickWildMutators();
+      App.wildMutators.forEach((m) => { Object.assign(rules, m.rules || {}); if (m.botSpeed) botSpeed = m.botSpeed; });
+      App.xpMult = 1.25;
+      for (let i = 0; i < 2; i++) {
+        botSpecs.push({ name: Nertz.PROFILES[App.cfg.difficulty].name + " " + (i + 1), avatar: Nertz.AVATARS[(i + 2) % Nertz.AVATARS.length], difficulty: App.cfg.difficulty });
+      }
+    } else if (mode === "tournament") {
+      App.tournament = App.tournament || { round: 0, totals: {}, founded: 0, wins: 0 };
+      App.tournament.round++;
+      for (let i = 0; i < 2; i++) {
+        botSpecs.push({ name: Nertz.PROFILES[App.cfg.difficulty].name + " " + (i + 1), avatar: Nertz.AVATARS[i % Nertz.AVATARS.length], difficulty: App.cfg.difficulty });
+      }
     } else if (!isZen) {
       const n = mode === "fast" ? 1 : isDaily ? 2 : App.cfg.opponents; // Fast = single bot, Ranked = your pick
       const diff = isDaily ? "normal" : App.cfg.difficulty;
@@ -157,7 +214,7 @@
 
     // engine for the human
     App.engine = new Nertz.Engine({
-      rng, playerId: "you", foundations: App.foundations,
+      rng, playerId: "you", foundations: App.foundations, rules: rules,
       onFoundation: () => {},
     });
     App.engine.on("change", () => syncHud());
@@ -167,9 +224,14 @@
     App.bots = botSpecs.map((s, i) => new Nertz.Bot({
       id: "bot" + i, name: s.name, avatar: s.avatar, difficulty: s.difficulty,
       foundations: App.foundations,
+      nertzSize: App.engine.rules.nertzSize, speedMult: botSpeed,
       rng: isDaily ? D.seededRng(dailySeed() + 7919 * (i + 1)) : Math.random,
       onPlay: onBotPlay,
     }));
+
+    if (mode === "wild") {
+      App.ui.toast("🎲 " + App.wildMutators.map((m) => m.name + " (" + m.desc + ")").join(" · "), true);
+    }
 
     updateModeBanner();
     showScreen("game");
@@ -286,13 +348,37 @@
 
     // Adventure: count light stats, then hand off to the campaign's own
     // objective check + outro dialogue (rewards come from the level).
-    if (App.mode === "adventure" && App.adventureLevel) {
-      const s = App.save.stats;
-      s.gamesPlayed++; s.totalFoundationCards += me.founded;
-      if (s.bestScore == null || me.score > s.bestScore) s.bestScore = me.score;
+    // Story mode: hand off to the campaign's objective check + outro dialogue.
+    if (App.mode === "story" && App.storyBeat) {
+      const st = App.save.stats;
+      st.gamesPlayed++; st.totalFoundationCards += me.founded;
+      if (st.bestScore == null || me.score > st.bestScore) st.bestScore = me.score;
       Nertz.store.save(App.save);
-      Nertz.adventure.finishLevel(App.adventureLevel, { won: youWon, score: me.score, founded: me.founded, timeMs: timeMs });
       if (youWon) { App.ui.confetti(); sfx("win"); } else { sfx("lose"); }
+      showScreen("menu");
+      Nertz.story.finishNertzBeat({ won: youWon, score: me.score, founded: me.founded, timeMs: timeMs });
+      return;
+    }
+
+    // Tournament: accumulate per-round; interim standings until the final.
+    if (App.mode === "tournament" && App.tournament) {
+      const t = App.tournament;
+      players.forEach((p) => { t.totals[p.name] = (t.totals[p.name] || 0) + p.score; });
+      t.founded += me.founded;
+      if (youWon) t.wins++;
+      if (t.round < TOURNAMENT_ROUNDS) { showTournamentInterim(); return; }
+      const myName = App.save.profile.name || "You";
+      const standings = Object.keys(t.totals).map((name) => ({
+        name: name, score: t.totals[name], isYou: name === myName,
+        avatar: (players.find((p) => p.name === name) || {}).avatar || "🃏",
+      })).sort((a, b) => b.score - a.score);
+      const meT = standings.find((p) => p.isYou);
+      const champion = standings[0].isYou;
+      updateProgress({ score: meT.score, founded: t.founded }, champion, timeMs,
+        champion && App.roundDifficulty === "hard");
+      showResult(standings, meT, champion, timeMs);
+      $("#resultTitle").textContent = champion ? "🏆 Tournament champion!" : "Tournament over — you placed #" + (standings.indexOf(meT) + 1);
+      App.tournament = null;
       return;
     }
 
@@ -324,6 +410,7 @@
       App._rewards = prog.scoreToRewards({
         score: me.score, won, foundationCards: me.founded, timeMs, difficulty: App.roundDifficulty,
       });
+      App._rewards.xp = Math.round(App._rewards.xp * (App.xpMult || 1)); // mode bonus (Blitz/Wild)
       App._levelUp = prog.grantRewards(App.save, App._rewards);
     }
     App._unlocked = prog.checkAchievements(App.save);
@@ -342,6 +429,29 @@
     }
     Nertz.store.save(App.save);
     refreshLevelChip();
+  }
+
+  // Between tournament rounds: standings + a "deal next round" action.
+  function showTournamentInterim() {
+    const t = App.tournament;
+    const myName = App.save.profile.name || "You";
+    $("#resultEmoji").textContent = "🏆";
+    $("#resultTitle").textContent = "Round " + t.round + " of " + TOURNAMENT_ROUNDS + " — standings";
+    const table = $("#resultTable");
+    table.innerHTML = "";
+    Object.keys(t.totals).map((name) => ({ name: name, total: t.totals[name] }))
+      .sort((a, b) => b.total - a.total)
+      .forEach((p, i) => {
+        const row = el("div", "res-row" + (p.name === myName ? " me" : ""));
+        const nm = el("div", "res-name");
+        nm.append(el("span", "res-rank", "#" + (i + 1)), document.createTextNode(p.name));
+        row.append(nm, el("div", "res-score", (p.total >= 0 ? "+" : "") + p.total));
+        table.appendChild(row);
+      });
+    $("#rewardRow").innerHTML = "";
+    $("#resultAgain").textContent = "Deal round " + (t.round + 1) + " ▸";
+    App._againAction = () => { $("#overlayRound").classList.remove("show"); startGame("tournament"); };
+    $("#overlayRound").classList.add("show");
   }
 
   function showResult(players, me, won, timeMs) {
@@ -387,7 +497,11 @@
   }
 
   function wireResult() {
-    $("#resultAgain").addEventListener("click", () => { $("#overlayRound").classList.remove("show"); startGame(App.mode); });
+    $("#resultAgain").addEventListener("click", () => {
+      if (App._againAction) { const fn = App._againAction; App._againAction = null; $("#resultAgain").textContent = "Play again"; fn(); return; }
+      $("#overlayRound").classList.remove("show");
+      restartMode();
+    });
     $("#resultMenu").addEventListener("click", () => { $("#overlayRound").classList.remove("show"); backToMenu(); });
   }
 
@@ -396,12 +510,18 @@
     showScreen("menu");
   }
 
+  // Restart the current mode cleanly (tournaments restart from round 1).
+  function restartMode() {
+    if (App.mode === "tournament") App.tournament = { round: 0, totals: {}, founded: 0, wins: 0 };
+    startGame(App.mode);
+  }
+
   // ============ game hud buttons ============
   function wireGameHud() {
     $("#btnQuit").addEventListener("click", backToMenu);
     $("#btnHint").addEventListener("click", showHint);
     $("#btnAuto").addEventListener("click", autoPlay);
-    $("#btnRestart").addEventListener("click", () => startGame(App.mode));
+    $("#btnRestart").addEventListener("click", restartMode);
     wireKeyboard();
   }
 
@@ -438,7 +558,7 @@
         case " ": case "f": case "F": e.preventDefault(); onFlipStock(); break;
         case "a": case "A": autoPlay(); break;
         case "h": case "H": showHint(); break;
-        case "r": case "R": startGame(App.mode); break;
+        case "r": case "R": restartMode(); break;
         case "Escape": backToMenu(); break;
       }
     });
@@ -463,6 +583,13 @@
 
   // ============ nav / panels ============
   function wireNav() {
+    $("#btnDayNight").addEventListener("click", () => {
+      App.save.settings.dayMode = !App.save.settings.dayMode;
+      Nertz.store.save(App.save);
+      applySettings();
+      App.ui.toast(App.save.settings.dayMode ? "☀️ Day form" : "🌙 Night form");
+      if (App.engine) App.ui.render(App.engine);
+    });
     $("#navStats").addEventListener("click", () => openPanel("stats"));
     $("#navBoard").addEventListener("click", () => openPanel("board"));
     $("#navSettings").addEventListener("click", () => openPanel("settings"));
@@ -538,6 +665,26 @@
 
   function renderSettings() {
     const wrap = el("div");
+
+    // Card-face form: traditional pips vs minimal duality faces
+    const formRow = el("div", "set-row");
+    formRow.append(el("span", null, "Card faces"));
+    const formSeg = el("div", "seg");
+    [["trad", "Classic"], ["alt", "Minimal"]].forEach(([v, label]) => {
+      const b = el("button", null, label);
+      if ((App.save.settings.cardForm || "trad") === v) b.classList.add("on");
+      b.addEventListener("click", () => {
+        App.save.settings.cardForm = v;
+        Nertz.store.save(App.save);
+        applySettings();
+        formSeg.querySelectorAll("button").forEach((x) => x.classList.remove("on"));
+        b.classList.add("on");
+        if (App.engine) App.ui.render(App.engine);
+      });
+      formSeg.appendChild(b);
+    });
+    formRow.appendChild(formSeg);
+    wrap.appendChild(formRow);
 
     // Theme picker
     wrap.appendChild(el("div", "set-row", "")).append(el("span", null, "Table theme"));

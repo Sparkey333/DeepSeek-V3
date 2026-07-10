@@ -6,7 +6,8 @@
   const Nertz = (g.Nertz = g.Nertz || {});
   const D = Nertz.deck;
 
-  const STOCK_FLIP = 3; // cards turned from stock to waste per flip
+  // Default table rules; modes override these for variant play.
+  const DEFAULT_RULES = { nertzSize: 13, workPiles: 4, stockFlip: 3 };
 
   class Engine {
     /**
@@ -15,6 +16,7 @@
      *   opts.foundations   - shared foundations array (shared with AI)
      *   opts.playerId      - id used to tag foundation cards
      *   opts.onFoundation  - cb(card) when human plays to a foundation
+     *   opts.rules         - {nertzSize, workPiles, stockFlip} variant overrides
      */
     constructor(opts) {
       opts = opts || {};
@@ -22,6 +24,7 @@
       this.playerId = opts.playerId || "you";
       this.foundations = opts.foundations || [];
       this.onFoundation = opts.onFoundation || function () {};
+      this.rules = Object.assign({}, DEFAULT_RULES, opts.rules || {});
       this.listeners = {};
       this.reset();
     }
@@ -31,16 +34,16 @@
 
     reset() {
       const full = D.shuffle(D.buildDeck(this.playerId), this.rng);
-      // Nertz pile: 13 cards, top face up.
-      this.nertz = full.slice(0, 13);
+      // Nertz pile (rules.nertzSize cards), top face up.
+      this.nertz = full.slice(0, this.rules.nertzSize);
       this.nertz.forEach((c, i) => (c.faceUp = i === this.nertz.length - 1));
-      // Four work (tableau) piles, 1 card each, face up.
-      this.work = [[], [], [], []];
-      let idx = 13;
-      for (let i = 0; i < 4; i++) {
+      // Work (tableau) piles, 1 card each, face up.
+      this.work = [];
+      let idx = this.rules.nertzSize;
+      for (let i = 0; i < this.rules.workPiles; i++) {
         const c = full[idx++];
         c.faceUp = true;
-        this.work[i].push(c);
+        this.work.push([c]);
       }
       // Remainder is the stock; waste starts empty.
       this.stock = full.slice(idx);
@@ -70,7 +73,7 @@
         this.waste = [];
         this.stockCycles++;
       } else {
-        const n = Math.min(STOCK_FLIP, this.stock.length);
+        const n = Math.min(this.rules.stockFlip, this.stock.length);
         for (let i = 0; i < n; i++) {
           const c = this.stock.pop();
           c.faceUp = true;
@@ -197,7 +200,7 @@
         const card = this._peekSource(s);
         for (const f of this.foundations) if (D.canStackFoundation(card, f)) return true;
         if (card.rank === 1) return true;
-        for (let d = 0; d < 4; d++) {
+        for (let d = 0; d < this.work.length; d++) {
           if (s.zone === "work" && s.pileIndex === d) continue;
           if (D.canStackTableau(card, this.workTop(d))) return true;
         }

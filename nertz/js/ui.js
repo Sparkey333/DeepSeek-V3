@@ -20,6 +20,15 @@
     if (card.color === "red") e.classList.add("red");
     e.dataset.cardId = card.id;
 
+    // Minimal duality form (settings → Card faces → Minimal): big rank + suit.
+    if (Nertz.cardForm === "alt") {
+      e.classList.add("alt-face");
+      const corner = el("div", "corner tl");
+      corner.append(el("span", "c-rank", card.label), el("span", "c-suit", card.symbol));
+      e.append(corner, el("div", "alt-rank", card.label), el("div", "alt-suit", card.symbol));
+      return e;
+    }
+
     // corner indices (top-left, and bottom-right rotated 180°)
     const tl = el("div", "corner tl");
     tl.append(el("span", "c-rank", card.label), el("span", "c-suit", card.symbol));

@@ -526,3 +526,45 @@ body.theme-has-assets .card.face-down::after { content: none; }
 .theme-swatch.noir { background: linear-gradient(135deg, #d7d7da, #171719 60%, #8a8a90); }
 .theme-opt .t-name { font-weight: 800; font-size: 13px; }
 .theme-opt .t-blurb { font-size: 11px; color: var(--text-dim); }
+
+/* ============================================================
+   REVAMP: menu sections, story map bits, alt card form, day mode
+   ============================================================ */
+.mode-section { width: 100%; max-width: 680px; }
+.mode-section h2 { font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-dim); margin: 16px 4px 8px; font-weight: 800; }
+.mode-card--wide { grid-column: 1 / -1; }
+.adv-node.st-current { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold) inset; }
+.st-wallet { margin-top: 6px; color: var(--gold); font-weight: 800; font-size: 13px; }
+
+/* ---- alt (minimal) card faces — flat duality look ---- */
+.card.alt-face { justify-content: center; align-items: center; background: #fdfdfa; }
+.card.alt-face .alt-rank { font-size: calc(var(--card-h) * 0.4); font-weight: 850; line-height: 1; letter-spacing: -0.03em; }
+.card.alt-face .alt-suit { font-size: calc(var(--card-h) * 0.22); margin-top: 2px; }
+.card.alt-face .corner.tl { position: absolute; top: 6px; left: 7px; }
+
+/* ---- day mode (☀️): light ivory chrome; pairs with any table theme.
+       Placed last so it overrides theme variable blocks. ---- */
+body.day-mode {
+  --felt-1: #eee7d3; --felt-2: #e2d8be; --felt-3: #cec29f;
+  --text: #24321f; --text-dim: #5f6d58;
+  --gold: #9a6d12; --gold-deep: #7c570c;
+  --accent: #157a56; --accent-deep: #0c5a3e;
+  --red: #b31d26; --red-soft: #c9505a;
+  --shadow: 0 10px 26px rgba(90, 74, 30, 0.22);
+}
+body.day-mode .topbar { background: linear-gradient(180deg, rgba(255,255,255,0.55), rgba(255,255,255,0)); }
+body.day-mode .icon-btn { background: rgba(0,0,0,0.06); border-color: rgba(0,0,0,0.08); color: var(--text); }
+body.day-mode .lvl-chip, body.day-mode .opp, body.day-mode .menu-config { background: rgba(255,255,255,0.6); border-color: rgba(0,0,0,0.08); }
+body.day-mode .mode-card { background: linear-gradient(160deg, rgba(255,255,255,0.8), rgba(255,255,255,0.45)); border-color: rgba(0,0,0,0.1); box-shadow: 0 6px 14px rgba(90,74,30,0.14); }
+body.day-mode .mode-card--primary { background: linear-gradient(160deg, rgba(21,122,86,0.18), rgba(255,255,255,0.5)); border-color: rgba(21,122,86,0.4); }
+body.day-mode .mode-card--story { background: linear-gradient(160deg, rgba(154,109,18,0.16), rgba(255,255,255,0.5)); border-color: rgba(154,109,18,0.4); }
+body.day-mode .pile-slot { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.16); }
+body.day-mode .pile-slot .pile-label { color: rgba(0,0,0,0.35); }
+body.day-mode .seg { background: rgba(0,0,0,0.08); }
+body.day-mode .seg button { color: var(--text-dim); }
+body.day-mode .sheet, body.day-mode .adv-sheet { background: linear-gradient(180deg, #f6f0df, #e9dfc8); color: var(--text); border-color: rgba(0,0,0,0.1); }
+body.day-mode .story-box { background: rgba(252,248,238,0.97); color: #24321f; border-color: rgba(0,0,0,0.12); }
+body.day-mode .res-row, body.day-mode .stat-box, body.day-mode .ach, body.day-mode .adv-node, body.day-mode .theme-opt { background: rgba(255,255,255,0.62); border-color: rgba(0,0,0,0.08); color: var(--text); }
+body.day-mode .toast { background: rgba(252,248,238,0.97); color: #24321f; border-color: rgba(0,0,0,0.15); }
+body.day-mode .ptab { background: rgba(0,0,0,0.06); }
+body.day-mode .switch { background: rgba(0,0,0,0.18); }

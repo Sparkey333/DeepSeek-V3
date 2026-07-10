@@ -44,21 +44,33 @@ onto the **shared foundations** in the middle.
 
 | Mode | Description |
 |------|-------------|
-| ⚡ **Fast Play** | One quick round vs a single bot. Jump straight in. |
-| 🗺️ **Adventure** | *Shuffleton Story* — a cozy career campaign with rivals, dialogue, and per-level objectives (à la Golf Story). |
-| 🏁 **Ranked Race** | Full table (1–3 bots). Results feed XP, levels & the leaderboard. |
-| 📅 **Daily Challenge** | A deterministic daily shuffle — everyone gets the same deal. One ranked shot a day. |
+| 🗺️ **Story — The Sandpiper Revival** | The story-mode pilot (à la *Golf Story*): 14 quests mixing Nertz races, poker, blackjack & golf solitaire. |
+| ⚡ **Fast Play** | Classic 1v1 sprint. Jump straight in. |
+| 🌀 **Blitz** | 7-card Nertz pile, single stock flips, turbo bot. +15% XP. |
+| 🎲 **Wild Shuffle** | Two random rule mutators every round (pile sizes, flip counts, table widths, bot speeds). +25% XP. |
 | 🌙 **Zen Solo** | No bots, no pressure. Practice the patience layer solo. |
+| 🏁 **Ranked Race** | Full table (1–3 bots). Results feed XP, levels & the leaderboard. |
+| 🏆 **Tournament** | Best-of-3 rounds, cumulative score, interim standings, champion's rewards. |
+| 📅 **Daily Challenge** | A deterministic daily shuffle — everyone gets the same deal. One ranked shot a day. |
 
-Configure **opponents (1–3)** and **difficulty (Rookie / Sharp / Ace)** from the
-menu (Ranked). Each mode has a distinct line-up and an in-game banner.
+Rule variants are first-class: the engine takes `{nertzSize, workPiles, stockFlip}`
+and bots take speed multipliers, so modes (and story quests) genuinely play differently.
 
-### Adventure: Shuffleton Story
-Return to your seaside hometown and revive the faded **Riffle Room** Nertz club.
-Chapter 1 (*Back to Shuffleton*) has four levels — learn from Gran Marge, out-deal
-Rusty at the bait shop, survive the Tabby Twins, and face Mayor Aces on the pier —
-each with intro/outro dialogue, an objective (win / score / time), and rewards
-(XP, coins, theme unlocks). The framework is built to keep adding chapters.
+### Story: The Sandpiper Revival
+Gullwash-by-the-Sea — a washed-up seaside town where the ferry stopped coming in
+2011 and nobody told the ferry schedule sign. Reopen the boarded-up **Sandpiper
+Social Club** quest by quest: mentor Betts and her collapsing sailor proverbs,
+Admiral Crumbs (a seagull who steals exactly one ace per match), and the rival
+Preston Featherstonhaugh III, whose name is pronounced differently every scene.
+14 beats across 6 locations mix **Nertz races** (with rule twists), **5-card-draw
+poker**, **blackjack**, and **golf solitaire**, with coin wagers (10→95 ◈),
+dialogue, retry-on-lose, theme unlocks, and a title reward at the finale.
+
+### Duality toggles ☯
+- **Day / Night form** — the ☀️/🌙 button in the top bar flips the whole app
+  between dark felt and light ivory chrome; works with every table theme.
+- **Card faces** — Settings → Card faces: *Classic* (traditional pip layouts)
+  or *Minimal* (big flat rank + suit).
 
 ### Polish
 - **Real card faces** — classic French-deck pip layouts, court-card monograms, ornate aces.

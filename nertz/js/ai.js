@@ -27,6 +27,8 @@
       this.foundations = opts.foundations;
       this.rng = opts.rng || Math.random;
       this.profile = PROFILES[opts.difficulty] || PROFILES.normal;
+      this.speedMult = opts.speedMult || 1;   // >1 = faster bot (mode variants)
+      this.nertzSize = opts.nertzSize || 13;  // matches the human's rules.nertzSize
       this.onPlay = opts.onPlay || function () {};
       // The bot owns a full 52-card deck. The first 13 are its Nertz pile
       // (which it races to empty); the rest are its hand/stock. We model the
@@ -35,8 +37,8 @@
       // deadlocks on Nertz ordering the way a top-only model would. Nertz
       // cards are flagged so we can prioritise them and track the race.
       const full = D.shuffle(D.buildDeck(this.id), this.rng);
-      this.pool = full.map((card, i) => ({ card, isNertz: i < 13 }));
-      this.nertzCount = 13;
+      this.pool = full.map((card, i) => ({ card, isNertz: i < this.nertzSize }));
+      this.nertzCount = this.nertzSize;
       this.active = false;
       this._timer = null;
       this.foundationCount = 0;
@@ -48,7 +50,7 @@
     _schedule() {
       if (!this.active) return;
       const [lo, hi] = this.profile.tick;
-      const delay = lo + this.rng() * (hi - lo);
+      const delay = (lo + this.rng() * (hi - lo)) / this.speedMult;
       this._timer = setTimeout(() => this._tick(), delay);
     }
 

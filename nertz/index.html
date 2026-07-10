@@ -17,6 +17,7 @@
         <span class="brand-name">Nertz<span class="brand-accent">Royale</span></span>
       </div>
       <div class="topbar-right">
+        <button class="icon-btn" id="btnDayNight" title="Toggle day/night form">🌙</button>
         <div class="lvl-chip" id="lvlChip" title="Your level &amp; XP">
           <span class="lvl-badge" id="lvlBadge">1</span>
           <div class="lvl-meta">
@@ -37,32 +38,62 @@
         <p class="hero-sub">The classic fast-play solitaire race — rebuilt, then improved in every way.</p>
       </div>
 
-      <section class="mode-grid">
-        <button class="mode-card mode-card--primary" data-mode="fast">
-          <span class="mode-emoji">⚡</span>
-          <span class="mode-title">Fast Play</span>
-          <span class="mode-desc">Jump straight in — one quick round vs a single bot.</span>
-        </button>
-        <button class="mode-card mode-card--story" data-mode="adventure">
-          <span class="mode-emoji">🗺️</span>
-          <span class="mode-title">Adventure</span>
-          <span class="mode-desc">Shuffleton Story — a cozy career campaign with rivals &amp; objectives.</span>
-        </button>
-        <button class="mode-card" data-mode="ranked">
-          <span class="mode-emoji">🏁</span>
-          <span class="mode-title">Ranked Race</span>
-          <span class="mode-desc">Full table (1–3 bots). Earn XP, climb levels, hit the leaderboard.</span>
-        </button>
-        <button class="mode-card" data-mode="daily">
-          <span class="mode-emoji">📅</span>
-          <span class="mode-title">Daily Challenge</span>
-          <span class="mode-desc">Same shuffle for everyone, 2 bots. One ranked shot a day.</span>
-        </button>
-        <button class="mode-card" data-mode="zen">
-          <span class="mode-emoji">🌙</span>
-          <span class="mode-title">Zen Solo</span>
-          <span class="mode-desc">No bots, no pressure. Just you and the cards.</span>
-        </button>
+      <section class="mode-section">
+        <h2>Story</h2>
+        <div class="mode-grid">
+          <button class="mode-card mode-card--story mode-card--wide" data-mode="story">
+            <span class="mode-emoji">🗺️</span>
+            <span class="mode-title">The Sandpiper Revival</span>
+            <span class="mode-desc">Story mode pilot — revive a washed-up seaside card club through Nertz, poker, blackjack &amp; golf solitaire. Ch.1: 14 quests.</span>
+          </button>
+        </div>
+      </section>
+
+      <section class="mode-section">
+        <h2>Quick Play</h2>
+        <div class="mode-grid">
+          <button class="mode-card mode-card--primary" data-mode="fast">
+            <span class="mode-emoji">⚡</span>
+            <span class="mode-title">Fast Play</span>
+            <span class="mode-desc">Classic 1v1 sprint. Jump straight in.</span>
+          </button>
+          <button class="mode-card" data-mode="blitz">
+            <span class="mode-emoji">🌀</span>
+            <span class="mode-title">Blitz</span>
+            <span class="mode-desc">7-card Nertz pile, single flips, turbo bot. Pure adrenaline.</span>
+          </button>
+          <button class="mode-card" data-mode="wild">
+            <span class="mode-emoji">🎲</span>
+            <span class="mode-title">Wild Shuffle</span>
+            <span class="mode-desc">Two random rule mutators every round. +25% XP.</span>
+          </button>
+          <button class="mode-card" data-mode="zen">
+            <span class="mode-emoji">🌙</span>
+            <span class="mode-title">Zen Solo</span>
+            <span class="mode-desc">No bots, no clock. Just you and the cards.</span>
+          </button>
+        </div>
+      </section>
+
+      <section class="mode-section">
+        <h2>Compete</h2>
+        <div class="mode-grid">
+          <button class="mode-card" data-mode="ranked">
+            <span class="mode-emoji">🏁</span>
+            <span class="mode-title">Ranked Race</span>
+            <span class="mode-desc">Full table (1–3 bots). XP, levels, leaderboard.</span>
+          </button>
+          <button class="mode-card" data-mode="tournament">
+            <span class="mode-emoji">🏆</span>
+            <span class="mode-title">Tournament</span>
+            <span class="mode-desc">Best-of-3 rounds, cumulative score. Champion takes the glory.</span>
+          </button>
+          <button class="mode-card" data-mode="daily">
+            <span class="mode-emoji">📅</span>
+            <span class="mode-title">Daily Challenge</span>
+            <span class="mode-desc">Same shuffle for everyone. One ranked shot a day.</span>
+          </button>
+        </div>
       </section>
 
       <div class="menu-config" id="menuConfig">
@@ -160,8 +191,12 @@
   <script src="js/ai.js"></script>
   <script src="js/storage.js"></script>
   <script src="js/progression.js"></script>
-  <script src="js/adventure.js"></script>
+  <script src="js/story-content.js"></script>
+  <script src="js/story.js"></script>
   <script src="js/ui.js"></script>
+  <script src="js/minigames/poker.js"></script>
+  <script src="js/minigames/blackjack.js"></script>
+  <script src="js/minigames/golf.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>
