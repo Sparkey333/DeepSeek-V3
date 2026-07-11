@@ -61,6 +61,9 @@
     levelup() { const t = now(); [523, 659, 784, 1046].forEach((f, i) => tone(t + i * 0.09, { freq: f, dur: 0.22, gain: 0.07 })); },
     win() { const t = now(); [659, 784, 988, 1318, 1568].forEach((f, i) => tone(t + i * 0.1, { freq: f, dur: 0.28, gain: 0.08 })); },
     lose() { const t = now(); [392, 330, 262].forEach((f, i) => tone(t + i * 0.14, { freq: f, dur: 0.3, gain: 0.07, type: "triangle" })); },
+    hex() { const t = now(); [880, 620, 440].forEach((f, i) => tone(t + i * 0.06, { freq: f, dur: 0.12, gain: 0.06, type: "triangle" })); snap(t + 0.02, { freq: 900, gain: 0.05, dur: 0.12 }); },
+    haunt() { const t = now(); tone(t, { freq: 92, dur: 0.5, gain: 0.07, type: "sawtooth" }); tone(t + 0.1, { freq: 66, dur: 0.62, gain: 0.08, type: "sine" }); snap(t, { freq: 300, q: 0.4, gain: 0.05, dur: 0.4 }); },
+    spark() { const t = now(); tone(t, { freq: 1180, dur: 0.09, gain: 0.05 }); tone(t + 0.05, { freq: 1560, dur: 0.12, gain: 0.05 }); },
   };
 
   Nertz.audio = {

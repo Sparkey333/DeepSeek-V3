@@ -66,6 +66,18 @@ Preston Featherstonhaugh III, whose name is pronounced differently every scene.
 poker**, **blackjack**, and **golf solitaire**, with coin wagers (10→95 ◈),
 dialogue, retry-on-lose, theme unlocks, and a title reward at the finale.
 
+### Battle system: Charms & Hexes ⚔️
+Bank **4 cards** to the foundations to charge a **spark ◆** (hold up to 3). Spend
+them on table magic against rival players (buttons above the table, or keys 1/2/3):
+**❄️ Frost (1◆)** — the leading rival plays at half speed for 9s · **🌫️ Fog (2◆)** —
+every rival stalls for 5s · **🃏 Jinx (3◆)** — the leader fumbles their next 3 plays.
+Available in every vs-bot mode except Daily. In haunted story quests the **Undertow
+surges back** — freezing your stock for seconds at a time.
+
+The saga's full architecture — snowflake expansion, hero's journey, the Gray
+Dealer, chapter mini-arcs 1–5, battle symbolism — lives in **[STORY_BIBLE.md](STORY_BIBLE.md)**.
+Chapter 2, *The Undertow*, is playable now (10 quests).
+
 ### Duality toggles ☯
 - **Day / Night form** — the ☀️/🌙 button in the top bar flips the whole app
   between dark felt and light ivory chrome; works with every table theme.

@@ -218,7 +218,7 @@
       onFoundation: () => {},
     });
     App.engine.on("change", () => syncHud());
-    App.engine.on("foundation", () => { App.ui.render(App.engine); pulseLeader(); });
+    App.engine.on("foundation", () => { App.ui.render(App.engine); pulseLeader(); chargeSpark(); });
     App.engine.on("nertz", () => endRound("you"));
 
     App.bots = botSpecs.map((s, i) => new Nertz.Bot({
@@ -239,6 +239,19 @@
     App.ui.renderOpponents(App.bots, leaderId());
     syncHud();
 
+    // charms & hexes: available whenever there are rivals and the mode is
+    // not the deterministic Daily (keep that one a level playing field)
+    App.sparks = 0;
+    App.sparkProgress = 0;
+    App.tricksEnabled = botSpecs.length > 0 && mode !== "daily";
+    $("#tricksBar").classList.toggle("show", App.tricksEnabled);
+    updateTricksBar();
+
+    // the Undertow (story haunt beats): periodic dark surges freeze your stock
+    App.stockFrozenUntil = 0;
+    App.hauntOn = !!(isStory && App.storyBeat && App.storyBeat.nertz && App.storyBeat.nertz.haunt);
+    if (App.hauntOn) scheduleHaunt(6500 + Math.random() * 5000);
+
     App.startTime = Date.now();
     App.running = true;
     clearInterval(App.timer);
@@ -254,7 +267,81 @@
     clearInterval(App.timer);
     (App._botStartTimers || []).forEach(clearTimeout);
     App._botStartTimers = [];
+    clearTimeout(App._hauntTimer);
+    App.stockFrozenUntil = 0;
+    $("#stockSlot").classList.remove("frozen");
     App.bots.forEach((b) => b.stop());
+  }
+
+  // ============ charms & hexes (battle tricks) ============
+  const HEXES = {
+    frost: { cost: 1, apply: (t) => t.hex("slow", 9000),  msg: (t) => "❄️ " + t.name + " frosted — half speed for 9s" },
+    fog:   { cost: 2, apply: null /* all bots */,          msg: () => "🌫️ Fog rolls over every rival — 5s stall" },
+    jinx:  { cost: 3, apply: (t) => t.hex("fumble", 3),   msg: (t) => "🃏 " + t.name + " jinxed — fumbles their next 3 plays" },
+  };
+
+  function chargeSpark() {
+    if (!App.tricksEnabled) return;
+    App.sparkProgress++;
+    if (App.sparkProgress >= 4 && App.sparks < 3) { // every 4 banked cards → 1 spark
+      App.sparkProgress = 0;
+      App.sparks++;
+      sfx("spark");
+      App.ui.toast("◆ Spark charged (" + App.sparks + "/3)");
+    }
+    updateTricksBar();
+  }
+
+  function updateTricksBar() {
+    if (!$("#sparkPips")) return;
+    $("#sparkPips").textContent = "◆".repeat(App.sparks || 0) + "◇".repeat(3 - (App.sparks || 0));
+    Object.keys(HEXES).forEach((k) => {
+      const btn = $("#hex" + k.charAt(0).toUpperCase() + k.slice(1));
+      if (btn) btn.disabled = !App.running || !App.tricksEnabled || (App.sparks || 0) < HEXES[k].cost;
+    });
+  }
+
+  // The leading rival (fewest Nertz cards left) — the natural hex target.
+  function leaderBot() {
+    let best = null;
+    App.bots.forEach((b) => { if (!best || b.nertzRemaining() < best.nertzRemaining()) best = b; });
+    return best;
+  }
+
+  function castHex(kind) {
+    if (!App.running || !App.tricksEnabled) return;
+    const h = HEXES[kind];
+    if (!h || App.sparks < h.cost) { sfx("invalid"); return; }
+    const target = leaderBot();
+    if (!target) { sfx("invalid"); return; }
+    App.sparks -= h.cost;
+    if (kind === "fog") App.bots.forEach((b) => b.hex("pause", 5000));
+    else h.apply(target);
+    sfx("hex");
+    App.ui.toast(h.msg(target), true);
+    const btn = $("#hex" + kind.charAt(0).toUpperCase() + kind.slice(1));
+    if (btn) { btn.classList.add("cast"); setTimeout(() => btn.classList.remove("cast"), 520); }
+    updateTricksBar();
+    pulseLeader(); // re-render chips so the effect badge shows
+  }
+
+  // ============ the Undertow (haunt surges) ============
+  function scheduleHaunt(delay) {
+    clearTimeout(App._hauntTimer);
+    App._hauntTimer = setTimeout(hauntSurge, delay);
+  }
+
+  function hauntSurge() {
+    if (!App.running || !App.hauntOn) return;
+    App.stockFrozenUntil = Date.now() + 3500;
+    $("#stockSlot").classList.add("frozen");
+    document.body.classList.remove("haunt-pulse");
+    void document.body.offsetWidth; // restart the pulse animation
+    document.body.classList.add("haunt-pulse");
+    sfx("haunt");
+    App.ui.toast("🌫️ The Undertow grips your stock…");
+    setTimeout(() => { $("#stockSlot").classList.remove("frozen"); }, 3500);
+    scheduleHaunt(9000 + Math.random() * 6000);
   }
 
   function onBotPlay(ev) {
@@ -319,6 +406,7 @@
   }
   function onFlipStock() {
     if (!App.running) return;
+    if (Date.now() < (App.stockFrozenUntil || 0)) { sfx("invalid"); App.ui.toast("🧊 Frozen — wait for the surge to pass"); return; }
     App.engine.flipStock();
     App.ui.render(App.engine);
     sfx("flip");
@@ -520,6 +608,9 @@
   function wireGameHud() {
     $("#btnQuit").addEventListener("click", backToMenu);
     $("#btnHint").addEventListener("click", showHint);
+    $("#hexFrost").addEventListener("click", () => castHex("frost"));
+    $("#hexFog").addEventListener("click", () => castHex("fog"));
+    $("#hexJinx").addEventListener("click", () => castHex("jinx"));
     $("#btnAuto").addEventListener("click", autoPlay);
     $("#btnRestart").addEventListener("click", restartMode);
     wireKeyboard();
@@ -559,6 +650,9 @@
         case "a": case "A": autoPlay(); break;
         case "h": case "H": showHint(); break;
         case "r": case "R": restartMode(); break;
+        case "1": castHex("frost"); break;
+        case "2": castHex("fog"); break;
+        case "3": castHex("jinx"); break;
         case "Escape": backToMenu(); break;
       }
     });

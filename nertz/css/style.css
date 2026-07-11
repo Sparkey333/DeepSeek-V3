@@ -568,3 +568,32 @@ body.day-mode .res-row, body.day-mode .stat-box, body.day-mode .ach, body.day-mo
 body.day-mode .toast { background: rgba(252,248,238,0.97); color: #24321f; border-color: rgba(0,0,0,0.15); }
 body.day-mode .ptab { background: rgba(0,0,0,0.06); }
 body.day-mode .switch { background: rgba(0,0,0,0.18); }
+
+/* ---- Charms & Hexes (battle tricks) + haunt events ---- */
+.tricks-bar { display: none; align-items: center; gap: 8px; justify-content: center; padding: 2px 14px 6px; }
+.tricks-bar.show { display: flex; }
+.spark-pips { font-size: 15px; letter-spacing: 2px; color: var(--gold); font-weight: 800; min-width: 58px; text-align: center; }
+.trick-btn {
+  width: 42px; height: 38px; border-radius: 11px; cursor: pointer; font-size: 17px;
+  border: 1px solid rgba(255,255,255,0.14); background: rgba(0,0,0,0.28); color: var(--text);
+  transition: transform .12s var(--ease), box-shadow .15s, opacity .15s;
+}
+.trick-btn:not(:disabled):hover { transform: translateY(-2px); box-shadow: 0 0 0 2px var(--gold), 0 6px 14px rgba(0,0,0,.35); }
+.trick-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.trick-btn.cast { animation: hexCast .5s var(--ease); }
+@keyframes hexCast { 0% { transform: scale(1); } 40% { transform: scale(1.35) rotate(-8deg); filter: drop-shadow(0 0 10px var(--accent)); } 100% { transform: scale(1); } }
+.opp.hexed { border-color: #8fb7ff; box-shadow: 0 0 10px rgba(120,170,255,0.35); }
+.opp-fx { font-size: 15px; margin-right: -2px; }
+
+/* the Undertow surges: brief dark pulse + frozen stock */
+body.haunt-pulse::after {
+  content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 45;
+  background: radial-gradient(120% 100% at 50% 110%, rgba(40,60,90,0.55), rgba(8,10,18,0.28) 55%, transparent);
+  animation: hauntFade 2.6s var(--ease) forwards;
+}
+@keyframes hauntFade { 0% { opacity: 0; } 18% { opacity: 1; } 100% { opacity: 0; } }
+.pile-slot.frozen { border-color: #8fb7ff; box-shadow: inset 0 0 18px rgba(130,180,255,0.5); filter: saturate(0.6); }
+body.day-mode .trick-btn { background: rgba(255,255,255,0.6); border-color: rgba(0,0,0,0.1); color: var(--text); }
+.st-chapter { margin: 18px 0 10px; padding-top: 10px; border-top: 1px dashed rgba(255,255,255,0.15); }
+.st-chapter:first-child { border-top: 0; padding-top: 0; }
+.st-chapter-title { font-weight: 850; font-size: 16px; color: var(--gold); letter-spacing: -0.01em; }

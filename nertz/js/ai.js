@@ -42,6 +42,18 @@
       this.active = false;
       this._timer = null;
       this.foundationCount = 0;
+      // status effects (player hexes / dark events)
+      this.slowUntil = 0;   // frost: half speed until this timestamp
+      this.pauseUntil = 0;  // fog: no plays until this timestamp
+      this.fumbleTicks = 0; // jinx: skip the next N would-be plays
+    }
+
+    // Apply a hex: 'slow' (ms), 'pause' (ms), or 'fumble' (tick count).
+    hex(type, val) {
+      const now = Date.now();
+      if (type === "slow") this.slowUntil = now + val;
+      else if (type === "pause") this.pauseUntil = now + val;
+      else if (type === "fumble") this.fumbleTicks = Math.max(this.fumbleTicks, val);
     }
 
     start() { this.active = true; this._schedule(); }
@@ -50,7 +62,8 @@
     _schedule() {
       if (!this.active) return;
       const [lo, hi] = this.profile.tick;
-      const delay = (lo + this.rng() * (hi - lo)) / this.speedMult;
+      const frosted = Date.now() < this.slowUntil ? 0.5 : 1;
+      const delay = (lo + this.rng() * (hi - lo)) / (this.speedMult * frosted);
       this._timer = setTimeout(() => this._tick(), delay);
     }
 
@@ -77,6 +90,8 @@
 
     _tick() {
       if (!this.active) return;
+      if (Date.now() < this.pauseUntil) { this._schedule(); return; } // fogged
+      if (this.fumbleTicks > 0) { this.fumbleTicks--; this._schedule(); return; } // jinxed
       const slip = this.rng() < this.profile.mistake; // sometimes "misses" a play
       if (!slip) {
         const play = this._bestPlay();

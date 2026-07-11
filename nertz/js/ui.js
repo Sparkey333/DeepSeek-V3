@@ -192,6 +192,10 @@
         const o = el("div", "opp");
         o.dataset.botId = b.id; // so card-flight animations can originate here
         if (b.id === leaderId) o.classList.add("lead");
+        // active hex badge (frost/fog/jinx)
+        const nowT = Date.now();
+        const fx = b.pauseUntil > nowT ? "🌫️" : b.fumbleTicks > 0 ? "🃏" : b.slowUntil > nowT ? "❄️" : null;
+        if (fx) { o.classList.add("hexed"); o.appendChild(el("span", "opp-fx", fx)); }
         const ava = el("div", "opp-ava", b.avatar);
         const meta = el("div", "opp-meta");
         meta.append(

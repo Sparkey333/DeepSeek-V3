@@ -16,7 +16,24 @@
   let mapEl = null, storyEl = null;
   let activeBeat = null;
 
-  function content() { return Nertz.storyContent; }
+  let _content = null;
+  function content() {
+    if (_content) return _content;
+    const c1 = Nertz.storyContent;
+    const c2 = Nertz.storyContent2;
+    if (!c2) { _content = c1; return _content; }
+    _content = {
+      meta: Object.assign({}, c1.meta, {
+        chapters: Object.assign(
+          { 1: { title: "Chapter 1 — The Sandpiper Revival", sub: c1.meta.tagline } },
+          c2.chapters || {}),
+      }),
+      cast: Object.assign({}, c1.cast, c2.cast || {}),
+      locations: c1.locations.concat(c2.locations || []),
+      beats: c1.beats.concat((c2.beats || []).map((b) => Object.assign({ chapter: 2 }, b))),
+    };
+    return _content;
+  }
   function save() { return hooks.getSave(); }
   function step() { return (save().story && save().story.step) || 0; }
 
@@ -66,14 +83,28 @@
     body.innerHTML = "";
     const beats = content().beats;
     const cur = step();
-    const done = cur >= beats.length;
-    if (done) {
-      const fin = el("div", "adv-ch-sub", "🏆 Chapter complete! The Sandpiper Social Club lives again. More chapters coming…");
+    if (cur >= beats.length) {
+      const fin = el("div", "adv-ch-sub", "🏆 All chapters complete! The tide is turned — for now. More of the saga coming…");
       fin.style.textAlign = "center"; fin.style.padding = "10px";
       body.appendChild(fin);
     }
+    // group beats: chapter → location
+    const chapters = {};
+    beats.forEach((b, i) => { const c = b.chapter || 1; (chapters[c] = chapters[c] || []).push({ b, i }); });
+    Object.keys(chapters).sort((a, b) => a - b).forEach((cnum) => {
+      const chMeta = ((content().meta.chapters || {})[cnum]) || { title: "Chapter " + cnum, sub: "" };
+      const chHead = el("div", "st-chapter");
+      chHead.append(el("div", "st-chapter-title", chMeta.title), el("div", "adv-ch-sub", chMeta.sub));
+      body.appendChild(chHead);
+      const chBeats = chapters[cnum];
+      renderChapterLocations(body, chBeats, cur);
+    });
+    show(mapEl);
+  }
+
+  function renderChapterLocations(body, chBeats, cur) {
     content().locations.forEach((loc) => {
-      const locBeats = beats.map((b, i) => ({ b, i })).filter((x) => x.b.locationId === loc.id);
+      const locBeats = chBeats.filter((x) => x.b.locationId === loc.id);
       if (!locBeats.length) return;
       const ch = el("div", "adv-chapter");
       ch.append(el("div", "adv-ch-title", loc.emoji + " " + loc.name),
@@ -94,7 +125,6 @@
       ch.appendChild(grid);
       body.appendChild(ch);
     });
-    show(mapEl);
   }
 
   // ---- dialogue ------------------------------------------------------------

@@ -577,6 +577,35 @@ body.day-mode .toast { background: rgba(252,248,238,0.97); color: #24321f; borde
 body.day-mode .ptab { background: rgba(0,0,0,0.06); }
 body.day-mode .switch { background: rgba(0,0,0,0.18); }
 
+/* ---- Charms & Hexes (battle tricks) + haunt events ---- */
+.tricks-bar { display: none; align-items: center; gap: 8px; justify-content: center; padding: 2px 14px 6px; }
+.tricks-bar.show { display: flex; }
+.spark-pips { font-size: 15px; letter-spacing: 2px; color: var(--gold); font-weight: 800; min-width: 58px; text-align: center; }
+.trick-btn {
+  width: 42px; height: 38px; border-radius: 11px; cursor: pointer; font-size: 17px;
+  border: 1px solid rgba(255,255,255,0.14); background: rgba(0,0,0,0.28); color: var(--text);
+  transition: transform .12s var(--ease), box-shadow .15s, opacity .15s;
+}
+.trick-btn:not(:disabled):hover { transform: translateY(-2px); box-shadow: 0 0 0 2px var(--gold), 0 6px 14px rgba(0,0,0,.35); }
+.trick-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.trick-btn.cast { animation: hexCast .5s var(--ease); }
+@keyframes hexCast { 0% { transform: scale(1); } 40% { transform: scale(1.35) rotate(-8deg); filter: drop-shadow(0 0 10px var(--accent)); } 100% { transform: scale(1); } }
+.opp.hexed { border-color: #8fb7ff; box-shadow: 0 0 10px rgba(120,170,255,0.35); }
+.opp-fx { font-size: 15px; margin-right: -2px; }
+
+/* the Undertow surges: brief dark pulse + frozen stock */
+body.haunt-pulse::after {
+  content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 45;
+  background: radial-gradient(120% 100% at 50% 110%, rgba(40,60,90,0.55), rgba(8,10,18,0.28) 55%, transparent);
+  animation: hauntFade 2.6s var(--ease) forwards;
+}
+@keyframes hauntFade { 0% { opacity: 0; } 18% { opacity: 1; } 100% { opacity: 0; } }
+.pile-slot.frozen { border-color: #8fb7ff; box-shadow: inset 0 0 18px rgba(130,180,255,0.5); filter: saturate(0.6); }
+body.day-mode .trick-btn { background: rgba(255,255,255,0.6); border-color: rgba(0,0,0,0.1); color: var(--text); }
+.st-chapter { margin: 18px 0 10px; padding-top: 10px; border-top: 1px dashed rgba(255,255,255,0.15); }
+.st-chapter:first-child { border-top: 0; padding-top: 0; }
+.st-chapter-title { font-weight: 850; font-size: 16px; color: var(--gold); letter-spacing: -0.01em; }
+
 </style>
   </head>
 <body>
@@ -698,6 +727,14 @@ body.day-mode .switch { background: rgba(0,0,0,0.18); }
 
       <!-- Mode banner (varies per game mode) -->
       <div class="mode-banner" id="modeBanner"></div>
+
+      <!-- Charms & hexes (battle tricks vs rival players) -->
+      <div class="tricks-bar" id="tricksBar">
+        <span class="spark-pips" id="sparkPips" title="Sparks — charge by banking cards to foundations">◇◇◇</span>
+        <button class="trick-btn" id="hexFrost" title="Frost (1◆): the leading rival plays at half speed for 9s — key 1">❄️</button>
+        <button class="trick-btn" id="hexFog" title="Fog (2◆): every rival stalls for 5s — key 2">🌫️</button>
+        <button class="trick-btn" id="hexJinx" title="Jinx (3◆): the leading rival fumbles their next 3 plays — key 3">🃏</button>
+      </div>
 
       <!-- Opponents strip -->
       <div class="opp-strip" id="oppStrip"></div>
@@ -991,6 +1028,9 @@ body.day-mode .switch { background: rgba(0,0,0,0.18); }
     levelup() { const t = now(); [523, 659, 784, 1046].forEach((f, i) => tone(t + i * 0.09, { freq: f, dur: 0.22, gain: 0.07 })); },
     win() { const t = now(); [659, 784, 988, 1318, 1568].forEach((f, i) => tone(t + i * 0.1, { freq: f, dur: 0.28, gain: 0.08 })); },
     lose() { const t = now(); [392, 330, 262].forEach((f, i) => tone(t + i * 0.14, { freq: f, dur: 0.3, gain: 0.07, type: "triangle" })); },
+    hex() { const t = now(); [880, 620, 440].forEach((f, i) => tone(t + i * 0.06, { freq: f, dur: 0.12, gain: 0.06, type: "triangle" })); snap(t + 0.02, { freq: 900, gain: 0.05, dur: 0.12 }); },
+    haunt() { const t = now(); tone(t, { freq: 92, dur: 0.5, gain: 0.07, type: "sawtooth" }); tone(t + 0.1, { freq: 66, dur: 0.62, gain: 0.08, type: "sine" }); snap(t, { freq: 300, q: 0.4, gain: 0.05, dur: 0.4 }); },
+    spark() { const t = now(); tone(t, { freq: 1180, dur: 0.09, gain: 0.05 }); tone(t + 0.05, { freq: 1560, dur: 0.12, gain: 0.05 }); },
   };
 
   Nertz.audio = {
@@ -1278,6 +1318,18 @@ body.day-mode .switch { background: rgba(0,0,0,0.18); }
       this.active = false;
       this._timer = null;
       this.foundationCount = 0;
+      // status effects (player hexes / dark events)
+      this.slowUntil = 0;   // frost: half speed until this timestamp
+      this.pauseUntil = 0;  // fog: no plays until this timestamp
+      this.fumbleTicks = 0; // jinx: skip the next N would-be plays
+    }
+
+    // Apply a hex: 'slow' (ms), 'pause' (ms), or 'fumble' (tick count).
+    hex(type, val) {
+      const now = Date.now();
+      if (type === "slow") this.slowUntil = now + val;
+      else if (type === "pause") this.pauseUntil = now + val;
+      else if (type === "fumble") this.fumbleTicks = Math.max(this.fumbleTicks, val);
     }
 
     start() { this.active = true; this._schedule(); }
@@ -1286,7 +1338,8 @@ body.day-mode .switch { background: rgba(0,0,0,0.18); }
     _schedule() {
       if (!this.active) return;
       const [lo, hi] = this.profile.tick;
-      const delay = (lo + this.rng() * (hi - lo)) / this.speedMult;
+      const frosted = Date.now() < this.slowUntil ? 0.5 : 1;
+      const delay = (lo + this.rng() * (hi - lo)) / (this.speedMult * frosted);
       this._timer = setTimeout(() => this._tick(), delay);
     }
 
@@ -1313,6 +1366,8 @@ body.day-mode .switch { background: rgba(0,0,0,0.18); }
 
     _tick() {
       if (!this.active) return;
+      if (Date.now() < this.pauseUntil) { this._schedule(); return; } // fogged
+      if (this.fumbleTicks > 0) { this.fumbleTicks--; this._schedule(); return; } // jinxed
       const slip = this.rng() < this.profile.mistake; // sometimes "misses" a play
       if (!slip) {
         const play = this._bestPlay();
@@ -1812,6 +1867,228 @@ body.day-mode .switch { background: rgba(0,0,0,0.18); }
 
 </script>
   <script>
+/* story-content2.js — Chapter 2: "The Undertow".
+ * The dark turn of the saga (see STORY_BIBLE.md): the club is reopened, but
+ * the town's luck was gambled away long ago, and something gray has noticed
+ * the lights back on. Merged into the campaign by story.js.
+ */
+(function (g) {
+  "use strict";
+  const Nertz = (g.Nertz = g.Nertz || {});
+
+  Nertz.storyContent2 = {
+    chapters: {
+      2: { title: "Chapter 2 — The Undertow", sub: "The lights are back on. Something in the water noticed." },
+    },
+
+    cast: {
+      collector: { name: "The Collector", emoji: "🕴️" },
+      grayd: { name: "A Gray Voice", emoji: "🌫️" },
+    },
+
+    locations: [],
+
+    beats: [
+      {
+        id: "c2b1", locationId: "club", type: "dialogue", title: "The Water Feature Rises",
+        intro: [
+          { who: "gus", text: "(whispering, somehow louder than shouting) FOLKS. THE WATER FEATURE. IT'S... GLOWING." },
+          { who: "doreen", text: "Chowder don't glow, and I'd know. I've made some experimental chowder." },
+          { who: "crumbs", text: "( lands. places one card down. maintains eye contact. )" },
+          { who: "betts", text: "That's an ace with no suit, kid. Gray as a gull's grudge. In fifty years I've seen exactly one other." },
+          { who: "betts", text: "A wise sailor once said: when the sea sends you a bill... hm. When the tide mails you... look, we owe somebody something." },
+          { who: "milo", text: "Statistically, glowing floods precede a 4,000% increase in ominous strangers." },
+        ],
+        win: [
+          { who: "betts", text: "Fetch my old charm tin from behind the bar. Time you learned the family recipe. Not the chowder. The OTHER recipe." },
+        ],
+        lose: [],
+        reward: { xp: 240, coins: 90 },
+      },
+
+      {
+        id: "c2b2", locationId: "club", type: "nertz", title: "Table Manners",
+        intro: [
+          { who: "betts", text: "Gran's rules: bank four cards to the middle, you charge a spark. ◆. That's table magic, old as felt." },
+          { who: "betts", text: "Spend sparks to FROST a rival slow, FOG the whole table, or JINX their hands. Keys 1, 2, 3. Manners optional." },
+          { who: "you", text: "Is this... allowed?" },
+          { who: "betts", text: "Kid, the water is glowing. We're past 'allowed'. Beat me while cursed and you're ready." },
+        ],
+        win: [
+          { who: "betts", text: "Ha! Frosted by my own grandkid. Beautiful. Terrible. Mostly beautiful." },
+          { who: "crumbs", text: "( approving urp )" },
+        ],
+        lose: [
+          { who: "betts", text: "The sparks won't spend themselves, kid. Bank four, hex one. Again." },
+        ],
+        nertz: { bots: [{ name: "Betts", avatar: "⚓", difficulty: "normal" }], rules: {}, haunt: true,
+                 objective: { type: "win" } },
+        reward: { xp: 260, coins: 95 },
+      },
+
+      {
+        id: "c2b3", locationId: "chowder", type: "blackjack", title: "The Waiver",
+        intro: [
+          { who: "trent", text: "Before we play, please initial here, here, and... are you crying? There's a form for that." },
+          { who: "you", text: "Trent. Your clipboard is upside down." },
+          { who: "trent", text: "IT'S A STRESS POSITION. Look — Mr. Featherstonhaugh has been... borrowing. Luck. From a lender. A gray one." },
+          { who: "trent", text: "Beat me at twenty-one and I'll tell you what I filed. I file everything. It's a sickness." },
+        ],
+        win: [
+          { who: "trent", text: "Form 33-G: 'Transfer of Municipal Fortune.' Signed by a Featherstonhaugh in 1988. The ink is... still wet." },
+          { who: "you", text: "1988?" },
+          { who: "trent", text: "The ink. Is still. Wet." },
+        ],
+        lose: [
+          { who: "trent", text: "Per section 4, losers learn nothing. I don't make the rules. I laminate them." },
+        ],
+        stake: 60, opponent: { name: "Trent", avatar: "📋" },
+        reward: { xp: 280, coins: 100 },
+      },
+
+      {
+        id: "c2b4", locationId: "pier", type: "nertz", title: "The Gray Hour",
+        intro: [
+          { who: "gus", text: "(whisper-announcing) THE CLOCKS HAVE ALL STOPPED AT 3:33. THE GULLS ARE FLYING BACKWARDS. FISH ARE POLITE NOW." },
+          { who: "doreen", text: "A fish apologized to me. I've never felt so disrespected." },
+          { who: "grayd", text: "...deal... us... in..." },
+          { who: "betts", text: "Play through it, kid. A candle in fog beats a... a lighthouse in... just play through it." },
+        ],
+        win: [
+          { who: "gus", text: "(whispering) THE CLOCKS MOVED. ONE MINUTE. WE TAKE OUR VICTORIES IN MINUTES NOW." },
+        ],
+        lose: [
+          { who: "doreen", text: "The fog got in your chowder, hon. I mean your cards. Go again." },
+        ],
+        nertz: { bots: [
+            { name: "Doreen", avatar: "🥣", difficulty: "normal" },
+            { name: "Foghorn Gus", avatar: "📢", difficulty: "hard" },
+          ], rules: { nertzSize: 16 }, haunt: true,
+          objective: { type: "score", target: 22 } },
+        reward: { xp: 300, coins: 105 },
+      },
+
+      {
+        id: "c2b5", locationId: "lighthouse", type: "golf", title: "Signal Fire",
+        intro: [
+          { who: "milo", text: "The fog retreats 11.2% when the lamp burns. The lamp burns when someone clears the course. Old rule. Weird rule." },
+          { who: "you", text: "Who wrote that rule?" },
+          { who: "milo", text: "The lighthouse. Please don't ask it follow-ups." },
+        ],
+        win: [
+          { who: "milo", text: "Lamp's lit. Fog's sulking. The gulls have resumed flying forward, mostly out of spite." },
+        ],
+        lose: [
+          { who: "milo", text: "The lamp flickered and went out. The lighthouse says, quote, 'skill issue'. Again?" },
+        ],
+        stake: 75, config: { target: 26 },
+        reward: { xp: 320, coins: 110, unlockTheme: "forest" },
+      },
+
+      {
+        id: "c2b6", locationId: "marina", type: "dialogue", title: "Just Preston",
+        intro: [
+          { who: "preston", text: "It's pronounced Feather-STONE-haugh. No. FEATHERS-tun-hoff. No. It's..." },
+          { who: "preston", text: "It's just Preston. My grandfather sold this town's luck to a gray man at a gray table. I've been paying interest ever since." },
+          { who: "you", text: "The kelp smoothies?" },
+          { who: "preston", text: "Collateral. Everything is collateral. The yacht is three canoes in a trench coat. Help me, and I'll help you." },
+          { who: "betts", text: "A wise sailor once said... ah, forget the sailor. I say we take your hand, Preston. Both meanings." },
+        ],
+        win: [
+          { who: "preston", text: "Thank you. Also please never tell anyone about the canoes." },
+        ],
+        lose: [],
+        reward: { xp: 330, coins: 115 },
+      },
+
+      {
+        id: "c2b7", locationId: "chowder", type: "poker", title: "The Collector Calls",
+        intro: [
+          { who: "collector", text: "( the door doesn't open. he is simply inside. ) Good evening. I buy luck. Fair rates. Firm handshakes." },
+          { who: "collector", text: "Heard this one? Two fish are in a tank. One says... hm. It was funnier in 1988." },
+          { who: "you", text: "Everything about you was funnier in 1988." },
+          { who: "collector", text: "( writes that down in a gray ledger ) Five cards. If I win, I take the ace you love most. If you win... I leave a receipt." },
+        ],
+        win: [
+          { who: "collector", text: "A receipt, as promised. It reads: 'THE DEALER WILL SEE YOU SOON.' Do keep it. It's redeemable." },
+          { who: "crumbs", text: "( snatches the receipt. eats it. slow, defiant urp. )" },
+        ],
+        lose: [
+          { who: "collector", text: "Pleasure doing business. ( the chair he sat in is somehow gone too ) " },
+        ],
+        stake: 85, opponent: { name: "The Collector", avatar: "🕴️" },
+        reward: { xp: 350, coins: 120 },
+      },
+
+      {
+        id: "c2b8", locationId: "club", type: "nertz", title: "The Grayed",
+        intro: [
+          { who: "doreen", text: "WE DEAL FOR THE DEALER." },
+          { who: "gus", text: "WE DEAL FOR THE DEALER. (still somehow whispering)" },
+          { who: "milo", text: "WE DEAL FOR THE DEALER. Statistically." },
+          { who: "betts", text: "Their eyes've gone gray, kid. Beat them at the table and the table gives them back. That's the old law." },
+          { who: "you", text: "And if I lose?" },
+          { who: "betts", text: "Then we learn the chant too, and I hate group activities. WIN." },
+        ],
+        win: [
+          { who: "doreen", text: "...why am I holding thirteen cards and WHY does my chowder glow?" },
+          { who: "gus", text: "(whispering, relieved) I HAVE NEVER BEEN SO HAPPY TO HEAR MYSELF THINK." },
+          { who: "betts", text: "Welcome back, you beautiful loudmouths." },
+        ],
+        lose: [
+          { who: "grayd", text: "...one... more... chair... at... our... table..." },
+          { who: "betts", text: "NOPE. Shake it off, kid. Again." },
+        ],
+        nertz: { bots: [
+            { name: "Grayed Doreen", avatar: "🥣", difficulty: "hard" },
+            { name: "Grayed Gus", avatar: "📢", difficulty: "hard" },
+            { name: "Grayed Milo", avatar: "📊", difficulty: "normal" },
+          ], rules: {}, haunt: true,
+          objective: { type: "win" } },
+        reward: { xp: 380, coins: 130, unlockTheme: "royal" },
+      },
+
+      {
+        id: "c2b9", locationId: "baitshop", type: "nertz", title: "Turn the Tide",
+        intro: [
+          { who: "preston", text: "Before we face the Dealer, prove you can win with the tide against you. Single flips. My family's cursed shuffle." },
+          { who: "ferdinand", text: "For the record, the post office has received 41 letters addressed to 'The Gray Gentleman, The Sea'. I deliver none of them." },
+          { who: "preston", text: "Beat me under the clock, Tidebreaker-to-be. And I say that with 8% envy. 9." },
+        ],
+        win: [
+          { who: "preston", text: "12% envy. You're ready. Tomorrow we play for the ledger itself." },
+        ],
+        lose: [
+          { who: "preston", text: "The tide won that one. It's a good teacher and a sore winner. Again." },
+        ],
+        nertz: { bots: [
+            { name: "Preston", avatar: "🎩", difficulty: "hard" },
+            { name: "Betts", avatar: "⚓", difficulty: "normal" },
+          ], rules: { stockFlip: 1 },
+          objective: { type: "time", target: 150 } },
+        reward: { xp: 400, coins: 140 },
+      },
+
+      {
+        id: "c2b10", locationId: "club", type: "dialogue", title: "An Invitation, Gray",
+        intro: [
+          { who: "crumbs", text: "( drops a card into your hand. it was already in your pocket. it was always in your pocket. )" },
+          { who: "grayd", text: "...the Dealer requests the pleasure... midnight... the table below the water feature... bring your luck... all of it..." },
+          { who: "preston", text: "Below the—? There's no room below the... oh. Oh, there's always been a room below the water feature." },
+          { who: "betts", text: "A wise sailor once said—" },
+          { who: "betts", text: "No. No proverb. Kid: whatever you've got, we've got you. That's the whole saying. See you at midnight." },
+          { who: "gus", text: "(the quietest he has ever been) good luck, kid." },
+        ],
+        win: [],
+        lose: [],
+        reward: { xp: 420, coins: 150, title: "Tidebreaker" },
+      },
+    ],
+  };
+})(typeof window !== "undefined" ? window : this);
+
+</script>
+  <script>
 /* story.js — "The Sandpiper Revival" story-mode engine.
  * Data lives in story-content.js (Nertz.storyContent). This module owns the
  * town map + dialogue overlays and the beat runner; it talks to main.js
@@ -1830,7 +2107,24 @@ body.day-mode .switch { background: rgba(0,0,0,0.18); }
   let mapEl = null, storyEl = null;
   let activeBeat = null;
 
-  function content() { return Nertz.storyContent; }
+  let _content = null;
+  function content() {
+    if (_content) return _content;
+    const c1 = Nertz.storyContent;
+    const c2 = Nertz.storyContent2;
+    if (!c2) { _content = c1; return _content; }
+    _content = {
+      meta: Object.assign({}, c1.meta, {
+        chapters: Object.assign(
+          { 1: { title: "Chapter 1 — The Sandpiper Revival", sub: c1.meta.tagline } },
+          c2.chapters || {}),
+      }),
+      cast: Object.assign({}, c1.cast, c2.cast || {}),
+      locations: c1.locations.concat(c2.locations || []),
+      beats: c1.beats.concat((c2.beats || []).map((b) => Object.assign({ chapter: 2 }, b))),
+    };
+    return _content;
+  }
   function save() { return hooks.getSave(); }
   function step() { return (save().story && save().story.step) || 0; }
 
@@ -1880,14 +2174,28 @@ body.day-mode .switch { background: rgba(0,0,0,0.18); }
     body.innerHTML = "";
     const beats = content().beats;
     const cur = step();
-    const done = cur >= beats.length;
-    if (done) {
-      const fin = el("div", "adv-ch-sub", "🏆 Chapter complete! The Sandpiper Social Club lives again. More chapters coming…");
+    if (cur >= beats.length) {
+      const fin = el("div", "adv-ch-sub", "🏆 All chapters complete! The tide is turned — for now. More of the saga coming…");
       fin.style.textAlign = "center"; fin.style.padding = "10px";
       body.appendChild(fin);
     }
+    // group beats: chapter → location
+    const chapters = {};
+    beats.forEach((b, i) => { const c = b.chapter || 1; (chapters[c] = chapters[c] || []).push({ b, i }); });
+    Object.keys(chapters).sort((a, b) => a - b).forEach((cnum) => {
+      const chMeta = ((content().meta.chapters || {})[cnum]) || { title: "Chapter " + cnum, sub: "" };
+      const chHead = el("div", "st-chapter");
+      chHead.append(el("div", "st-chapter-title", chMeta.title), el("div", "adv-ch-sub", chMeta.sub));
+      body.appendChild(chHead);
+      const chBeats = chapters[cnum];
+      renderChapterLocations(body, chBeats, cur);
+    });
+    show(mapEl);
+  }
+
+  function renderChapterLocations(body, chBeats, cur) {
     content().locations.forEach((loc) => {
-      const locBeats = beats.map((b, i) => ({ b, i })).filter((x) => x.b.locationId === loc.id);
+      const locBeats = chBeats.filter((x) => x.b.locationId === loc.id);
       if (!locBeats.length) return;
       const ch = el("div", "adv-chapter");
       ch.append(el("div", "adv-ch-title", loc.emoji + " " + loc.name),
@@ -1908,7 +2216,6 @@ body.day-mode .switch { background: rgba(0,0,0,0.18); }
       ch.appendChild(grid);
       body.appendChild(ch);
     });
-    show(mapEl);
   }
 
   // ---- dialogue ------------------------------------------------------------
@@ -2210,6 +2517,10 @@ body.day-mode .switch { background: rgba(0,0,0,0.18); }
         const o = el("div", "opp");
         o.dataset.botId = b.id; // so card-flight animations can originate here
         if (b.id === leaderId) o.classList.add("lead");
+        // active hex badge (frost/fog/jinx)
+        const nowT = Date.now();
+        const fx = b.pauseUntil > nowT ? "🌫️" : b.fumbleTicks > 0 ? "🃏" : b.slowUntil > nowT ? "❄️" : null;
+        if (fx) { o.classList.add("hexed"); o.appendChild(el("span", "opp-fx", fx)); }
         const ava = el("div", "opp-ava", b.avatar);
         const meta = el("div", "opp-meta");
         meta.append(
@@ -3567,7 +3878,7 @@ Nertz.minigames.blackjack.open({stake:20, opponent:{name:'Tester',avatar:'🦝'}
       onFoundation: () => {},
     });
     App.engine.on("change", () => syncHud());
-    App.engine.on("foundation", () => { App.ui.render(App.engine); pulseLeader(); });
+    App.engine.on("foundation", () => { App.ui.render(App.engine); pulseLeader(); chargeSpark(); });
     App.engine.on("nertz", () => endRound("you"));
 
     App.bots = botSpecs.map((s, i) => new Nertz.Bot({
@@ -3588,6 +3899,19 @@ Nertz.minigames.blackjack.open({stake:20, opponent:{name:'Tester',avatar:'🦝'}
     App.ui.renderOpponents(App.bots, leaderId());
     syncHud();
 
+    // charms & hexes: available whenever there are rivals and the mode is
+    // not the deterministic Daily (keep that one a level playing field)
+    App.sparks = 0;
+    App.sparkProgress = 0;
+    App.tricksEnabled = botSpecs.length > 0 && mode !== "daily";
+    $("#tricksBar").classList.toggle("show", App.tricksEnabled);
+    updateTricksBar();
+
+    // the Undertow (story haunt beats): periodic dark surges freeze your stock
+    App.stockFrozenUntil = 0;
+    App.hauntOn = !!(isStory && App.storyBeat && App.storyBeat.nertz && App.storyBeat.nertz.haunt);
+    if (App.hauntOn) scheduleHaunt(6500 + Math.random() * 5000);
+
     App.startTime = Date.now();
     App.running = true;
     clearInterval(App.timer);
@@ -3603,7 +3927,81 @@ Nertz.minigames.blackjack.open({stake:20, opponent:{name:'Tester',avatar:'🦝'}
     clearInterval(App.timer);
     (App._botStartTimers || []).forEach(clearTimeout);
     App._botStartTimers = [];
+    clearTimeout(App._hauntTimer);
+    App.stockFrozenUntil = 0;
+    $("#stockSlot").classList.remove("frozen");
     App.bots.forEach((b) => b.stop());
+  }
+
+  // ============ charms & hexes (battle tricks) ============
+  const HEXES = {
+    frost: { cost: 1, apply: (t) => t.hex("slow", 9000),  msg: (t) => "❄️ " + t.name + " frosted — half speed for 9s" },
+    fog:   { cost: 2, apply: null /* all bots */,          msg: () => "🌫️ Fog rolls over every rival — 5s stall" },
+    jinx:  { cost: 3, apply: (t) => t.hex("fumble", 3),   msg: (t) => "🃏 " + t.name + " jinxed — fumbles their next 3 plays" },
+  };
+
+  function chargeSpark() {
+    if (!App.tricksEnabled) return;
+    App.sparkProgress++;
+    if (App.sparkProgress >= 4 && App.sparks < 3) { // every 4 banked cards → 1 spark
+      App.sparkProgress = 0;
+      App.sparks++;
+      sfx("spark");
+      App.ui.toast("◆ Spark charged (" + App.sparks + "/3)");
+    }
+    updateTricksBar();
+  }
+
+  function updateTricksBar() {
+    if (!$("#sparkPips")) return;
+    $("#sparkPips").textContent = "◆".repeat(App.sparks || 0) + "◇".repeat(3 - (App.sparks || 0));
+    Object.keys(HEXES).forEach((k) => {
+      const btn = $("#hex" + k.charAt(0).toUpperCase() + k.slice(1));
+      if (btn) btn.disabled = !App.running || !App.tricksEnabled || (App.sparks || 0) < HEXES[k].cost;
+    });
+  }
+
+  // The leading rival (fewest Nertz cards left) — the natural hex target.
+  function leaderBot() {
+    let best = null;
+    App.bots.forEach((b) => { if (!best || b.nertzRemaining() < best.nertzRemaining()) best = b; });
+    return best;
+  }
+
+  function castHex(kind) {
+    if (!App.running || !App.tricksEnabled) return;
+    const h = HEXES[kind];
+    if (!h || App.sparks < h.cost) { sfx("invalid"); return; }
+    const target = leaderBot();
+    if (!target) { sfx("invalid"); return; }
+    App.sparks -= h.cost;
+    if (kind === "fog") App.bots.forEach((b) => b.hex("pause", 5000));
+    else h.apply(target);
+    sfx("hex");
+    App.ui.toast(h.msg(target), true);
+    const btn = $("#hex" + kind.charAt(0).toUpperCase() + kind.slice(1));
+    if (btn) { btn.classList.add("cast"); setTimeout(() => btn.classList.remove("cast"), 520); }
+    updateTricksBar();
+    pulseLeader(); // re-render chips so the effect badge shows
+  }
+
+  // ============ the Undertow (haunt surges) ============
+  function scheduleHaunt(delay) {
+    clearTimeout(App._hauntTimer);
+    App._hauntTimer = setTimeout(hauntSurge, delay);
+  }
+
+  function hauntSurge() {
+    if (!App.running || !App.hauntOn) return;
+    App.stockFrozenUntil = Date.now() + 3500;
+    $("#stockSlot").classList.add("frozen");
+    document.body.classList.remove("haunt-pulse");
+    void document.body.offsetWidth; // restart the pulse animation
+    document.body.classList.add("haunt-pulse");
+    sfx("haunt");
+    App.ui.toast("🌫️ The Undertow grips your stock…");
+    setTimeout(() => { $("#stockSlot").classList.remove("frozen"); }, 3500);
+    scheduleHaunt(9000 + Math.random() * 6000);
   }
 
   function onBotPlay(ev) {
@@ -3668,6 +4066,7 @@ Nertz.minigames.blackjack.open({stake:20, opponent:{name:'Tester',avatar:'🦝'}
   }
   function onFlipStock() {
     if (!App.running) return;
+    if (Date.now() < (App.stockFrozenUntil || 0)) { sfx("invalid"); App.ui.toast("🧊 Frozen — wait for the surge to pass"); return; }
     App.engine.flipStock();
     App.ui.render(App.engine);
     sfx("flip");
@@ -3869,6 +4268,9 @@ Nertz.minigames.blackjack.open({stake:20, opponent:{name:'Tester',avatar:'🦝'}
   function wireGameHud() {
     $("#btnQuit").addEventListener("click", backToMenu);
     $("#btnHint").addEventListener("click", showHint);
+    $("#hexFrost").addEventListener("click", () => castHex("frost"));
+    $("#hexFog").addEventListener("click", () => castHex("fog"));
+    $("#hexJinx").addEventListener("click", () => castHex("jinx"));
     $("#btnAuto").addEventListener("click", autoPlay);
     $("#btnRestart").addEventListener("click", restartMode);
     wireKeyboard();
@@ -3908,6 +4310,9 @@ Nertz.minigames.blackjack.open({stake:20, opponent:{name:'Tester',avatar:'🦝'}
         case "a": case "A": autoPlay(); break;
         case "h": case "H": showHint(); break;
         case "r": case "R": restartMode(); break;
+        case "1": castHex("frost"); break;
+        case "2": castHex("fog"); break;
+        case "3": castHex("jinx"); break;
         case "Escape": backToMenu(); break;
       }
     });
