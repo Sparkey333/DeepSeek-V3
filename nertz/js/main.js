@@ -39,6 +39,10 @@
       saveProgress: () => { Nertz.store.save(App.save); refreshLevelChip(); },
       toast: (msg, gold) => App.ui.toast(msg, gold),
     });
+    Nertz.studio.init({
+      toast: (msg, gold) => App.ui.toast(msg, gold),
+      reapplyTheme: () => Nertz.themes.apply(App.save.settings.theme || "classic"),
+    });
     // browsers require a user gesture before audio can start
     document.addEventListener("pointerdown", () => Nertz.audio.unlock(), { once: true });
   }
@@ -709,6 +713,7 @@
     else if (tab === "ach") body.appendChild(renderAchievements());
     else if (tab === "board") body.appendChild(renderBoard());
     else if (tab === "settings") body.appendChild(renderSettings());
+    else if (tab === "studio") body.appendChild(Nertz.studio.render());
   }
 
   function renderStats() {

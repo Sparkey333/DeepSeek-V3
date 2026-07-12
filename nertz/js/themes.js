@@ -58,25 +58,29 @@
 
   const byId = (id) => THEMES.find((t) => t.id === id) || THEMES[0];
 
+  // Asset Studio overrides (admin-generated art), stored per theme/kind.
+  const OV_KEY = "nertz.assets.v1";
+  function getOverrides() { try { return JSON.parse(localStorage.getItem(OV_KEY)) || {}; } catch (e) { return {}; } }
+  function saveOverrides(ov) { try { localStorage.setItem(OV_KEY, JSON.stringify(ov)); } catch (e) { /* quota */ } }
+
   function apply(id) {
     const theme = byId(id);
     THEMES.forEach((t) => document.body.classList.remove("theme-" + t.id));
     document.body.classList.add("theme-" + theme.id);
 
-    // If artwork is present, wire it via CSS variables; otherwise clear them so
-    // the procedural CSS fallback shows through.
+    // Artwork resolution order: Studio override > bundled asset > procedural CSS.
+    const ov = getOverrides()[theme.id] || {};
+    const table = ov.table || (theme.hasAssets ? theme.assets.table : null);
+    const back = ov.back || (theme.hasAssets ? theme.assets.back : null);
     const root = document.documentElement.style;
-    if (theme.hasAssets) {
-      root.setProperty("--theme-table", `url("${theme.assets.table}")`);
-      root.setProperty("--theme-back", `url("${theme.assets.back}")`);
-      document.body.classList.add("theme-has-assets");
-    } else {
-      root.removeProperty("--theme-table");
-      root.removeProperty("--theme-back");
-      document.body.classList.remove("theme-has-assets");
-    }
+    if (table) root.setProperty("--theme-table", 'url("' + table + '")');
+    else root.removeProperty("--theme-table");
+    if (back) root.setProperty("--theme-back", 'url("' + back + '")');
+    else root.removeProperty("--theme-back");
+    document.body.classList.toggle("theme-has-assets", !!table);
+    document.body.classList.toggle("theme-has-back", !!back);
     return theme.id;
   }
 
-  Nertz.themes = { THEMES, byId, apply };
+  Nertz.themes = { THEMES, byId, apply, getOverrides, saveOverrides };
 })(typeof window !== "undefined" ? window : this);

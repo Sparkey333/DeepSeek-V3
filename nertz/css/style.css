@@ -597,3 +597,26 @@ body.day-mode .trick-btn { background: rgba(255,255,255,0.6); border-color: rgba
 .st-chapter { margin: 18px 0 10px; padding-top: 10px; border-top: 1px dashed rgba(255,255,255,0.15); }
 .st-chapter:first-child { border-top: 0; padding-top: 0; }
 .st-chapter-title { font-weight: 850; font-size: 16px; color: var(--gold); letter-spacing: -0.01em; }
+
+
+/* ---- Asset Studio (admin BYOK) ---- */
+body.theme-has-back .card.face-down {
+  background: var(--theme-back) center / cover no-repeat !important;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.45), inset 0 0 0 1px rgba(255,255,255,0.12);
+}
+body.theme-has-back .card.face-down::after { content: none; }
+.studio { display: flex; flex-direction: column; gap: 14px; }
+.studio-note { font-size: 12px; color: var(--text-dim); background: rgba(0,0,0,0.22); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 10px 12px; }
+.studio-group { background: rgba(0,0,0,0.18); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+.studio-title { font-weight: 800; font-size: 13px; color: var(--gold); text-transform: uppercase; letter-spacing: .06em; }
+.studio-in { width: 100%; padding: 9px 11px; border-radius: 9px; border: 1px solid rgba(255,255,255,0.14); background: rgba(0,0,0,0.3); color: var(--text); font-size: 13px; }
+.studio-ta { resize: vertical; font-family: inherit; }
+.studio-row { display: flex; gap: 8px; }
+.studio-row .studio-in { flex: 1; }
+.studio-btn { padding: 10px 14px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.08); color: var(--text); font-weight: 800; font-size: 13px; cursor: pointer; flex: 1; }
+.studio-btn.primary { background: linear-gradient(180deg, var(--accent), var(--accent-deep)); color: #062018; border: 0; }
+.studio-btn:disabled { opacity: .4; cursor: not-allowed; }
+.studio-status { font-size: 12px; color: var(--text-dim); min-height: 15px; }
+.studio-preview img { max-width: 100%; border-radius: 10px; border: 1px solid rgba(255,255,255,0.15); }
+body.day-mode .studio-in { background: rgba(255,255,255,0.6); border-color: rgba(0,0,0,0.12); color: var(--text); }
+body.day-mode .studio-group, body.day-mode .studio-note { background: rgba(255,255,255,0.5); border-color: rgba(0,0,0,0.08); }
