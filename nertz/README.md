@@ -6,6 +6,8 @@ improved in design, feel, and depth.
 
 > Zero build step, zero dependencies. Just open `index.html`.
 
+**📊 [Project tracker](tracker.html)** — live status board (milestones, the Gullwash Saga chapters, build history, and links to every artifact).
+
 ## Run it
 
 - **Instant play:** double-click **`Nertz-Royale.html`** — the whole game in one
