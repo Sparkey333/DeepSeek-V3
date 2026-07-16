@@ -1,0 +1,43 @@
+{
+  "name": "nertz-royale",
+  "version": "1.0.0",
+  "description": "Nertz Royale — fast-play solitaire racing, as a desktop app.",
+  "author": "Nertz Royale",
+  "license": "MIT",
+  "repository": { "type": "git", "url": "https://github.com/Sparkey333/DeepSeek-V3.git" },
+  "main": "electron-main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --mac dmg --publish never",
+    "dist:win": "electron-builder --win nsis --publish never",
+    "dist:linux": "electron-builder --linux AppImage --publish never",
+    "dist:all": "electron-builder -mwl --publish never"
+  },
+  "build": {
+    "appId": "com.nertzroyale.app",
+    "productName": "Nertz Royale",
+    "files": [
+      "electron-main.js",
+      "index.html",
+      "css/**/*",
+      "js/**/*",
+      "assets/**/*",
+      "branding/icon.*"
+    ],
+    "mac": {
+      "target": ["dmg"],
+      "category": "public.app-category.games",
+      "icon": "branding/icon.png"
+    },
+    "dmg": {
+      "title": "Nertz Royale",
+      "backgroundColor": "#0a3526"
+    },
+    "win": { "target": ["nsis"], "icon": "branding/icon.png" },
+    "linux": { "target": ["AppImage"], "category": "Game", "icon": "branding/icon.png" }
+  },
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3"
+  }
+}

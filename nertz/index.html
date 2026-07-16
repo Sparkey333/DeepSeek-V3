@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0b3d2e" />
+  <title>Nertz Royale — Fast-Play Solitaire Racing</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+</head>
+<body>
+  <div id="app">
+    <!-- ===================== TOP BAR ===================== -->
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark">♠♥</span>
+        <span class="brand-name">Nertz<span class="brand-accent">Royale</span></span>
+      </div>
+      <div class="topbar-right">
+        <button class="icon-btn" id="btnDayNight" title="Toggle day/night form">🌙</button>
+        <div class="lvl-chip" id="lvlChip" title="Your level &amp; XP">
+          <span class="lvl-badge" id="lvlBadge">1</span>
+          <div class="lvl-meta">
+            <div class="lvl-bar"><span id="lvlBarFill"></span></div>
+            <span class="lvl-coins" id="coins">0 ◈</span>
+          </div>
+        </div>
+        <button class="icon-btn" id="navStats" title="Stats &amp; achievements">📊</button>
+        <button class="icon-btn" id="navBoard" title="Leaderboard">🏆</button>
+        <button class="icon-btn" id="navSettings" title="Settings">⚙️</button>
+      </div>
+    </header>
+
+    <!-- ===================== HOME / MENU ===================== -->
+    <main class="screen screen--menu active" id="screenMenu">
+      <div class="hero">
+        <h1 class="hero-title">Race to empty your <span>Nertz</span> pile.</h1>
+        <p class="hero-sub">The classic fast-play solitaire race — rebuilt, then improved in every way.</p>
+      </div>
+
+      <section class="mode-section">
+        <h2>Story</h2>
+        <div class="mode-grid">
+          <button class="mode-card mode-card--story mode-card--wide" data-mode="story">
+            <span class="mode-emoji">🗺️</span>
+            <span class="mode-title">The Sandpiper Revival</span>
+            <span class="mode-desc">Story mode pilot — revive a washed-up seaside card club through Nertz, poker, blackjack &amp; golf solitaire. Ch.1: 14 quests.</span>
+          </button>
+        </div>
+      </section>
+
+      <section class="mode-section">
+        <h2>Quick Play</h2>
+        <div class="mode-grid">
+          <button class="mode-card mode-card--primary" data-mode="fast">
+            <span class="mode-emoji">⚡</span>
+            <span class="mode-title">Fast Play</span>
+            <span class="mode-desc">Classic 1v1 sprint. Jump straight in.</span>
+          </button>
+          <button class="mode-card" data-mode="blitz">
+            <span class="mode-emoji">🌀</span>
+            <span class="mode-title">Blitz</span>
+            <span class="mode-desc">7-card Nertz pile, single flips, turbo bot. Pure adrenaline.</span>
+          </button>
+          <button class="mode-card" data-mode="wild">
+            <span class="mode-emoji">🎲</span>
+            <span class="mode-title">Wild Shuffle</span>
+            <span class="mode-desc">Two random rule mutators every round. +25% XP.</span>
+          </button>
+          <button class="mode-card" data-mode="zen">
+            <span class="mode-emoji">🌙</span>
+            <span class="mode-title">Zen Solo</span>
+            <span class="mode-desc">No bots, no clock. Just you and the cards.</span>
+          </button>
+        </div>
+      </section>
+
+      <section class="mode-section">
+        <h2>Compete</h2>
+        <div class="mode-grid">
+          <button class="mode-card" data-mode="ranked">
+            <span class="mode-emoji">🏁</span>
+            <span class="mode-title">Ranked Race</span>
+            <span class="mode-desc">Full table (1–3 bots). XP, levels, leaderboard.</span>
+          </button>
+          <button class="mode-card" data-mode="tournament">
+            <span class="mode-emoji">🏆</span>
+            <span class="mode-title">Tournament</span>
+            <span class="mode-desc">Best-of-3 rounds, cumulative score. Champion takes the glory.</span>
+          </button>
+          <button class="mode-card" data-mode="daily">
+            <span class="mode-emoji">📅</span>
+            <span class="mode-title">Daily Challenge</span>
+            <span class="mode-desc">Same shuffle for everyone. One ranked shot a day.</span>
+          </button>
+        </div>
+      </section>
+
+      <div class="menu-config" id="menuConfig">
+        <div class="cfg-row">
+          <span class="cfg-label">Opponents</span>
+          <div class="seg" id="cfgOpponents" data-val="3">
+            <button data-v="1">1</button><button data-v="2">2</button><button data-v="3" class="on">3</button>
+          </div>
+        </div>
+        <div class="cfg-row">
+          <span class="cfg-label">Difficulty</span>
+          <div class="seg" id="cfgDifficulty" data-val="normal">
+            <button data-v="easy">Rookie</button><button data-v="normal" class="on">Sharp</button><button data-v="hard">Ace</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="menu-foot">
+        <a href="tracker.html" target="_blank" rel="noopener">🗂️ Project tracker</a>
+        <span>·</span>
+        <a href="STORY_BIBLE.md" target="_blank" rel="noopener">📖 Story bible</a>
+        <span>·</span>
+        <a href="https://github.com/Sparkey333/DeepSeek-V3/pull/1" target="_blank" rel="noopener">🔀 PR #1</a>
+      </div>
+    </main>
+
+    <!-- ===================== GAME ===================== -->
+    <main class="screen screen--game" id="screenGame">
+      <div class="game-hud">
+        <button class="icon-btn ghost" id="btnQuit" title="Back to menu">‹</button>
+        <div class="hud-stat"><span class="hud-k">Score</span><span class="hud-v" id="hudScore">0</span></div>
+        <div class="hud-stat"><span class="hud-k">Nertz left</span><span class="hud-v" id="hudNertz">13</span></div>
+        <div class="hud-stat"><span class="hud-k">Time</span><span class="hud-v" id="hudTime">0:00</span></div>
+        <div class="hud-spacer"></div>
+        <button class="icon-btn ghost" id="btnAuto" title="Auto-play to foundations (A)">⤴</button>
+        <button class="icon-btn ghost" id="btnRestart" title="New deal (R)">↻</button>
+        <button class="icon-btn ghost" id="btnHint" title="Hint (H)">💡</button>
+      </div>
+
+      <!-- Mode banner (varies per game mode) -->
+      <div class="mode-banner" id="modeBanner"></div>
+
+      <!-- Charms & hexes (battle tricks vs rival players) -->
+      <div class="tricks-bar" id="tricksBar">
+        <span class="spark-pips" id="sparkPips" title="Sparks — charge by banking cards to foundations">◇◇◇</span>
+        <button class="trick-btn" id="hexFrost" title="Frost (1◆): the leading rival plays at half speed for 9s — key 1">❄️</button>
+        <button class="trick-btn" id="hexFog" title="Fog (2◆): every rival stalls for 5s — key 2">🌫️</button>
+        <button class="trick-btn" id="hexJinx" title="Jinx (3◆): the leading rival fumbles their next 3 plays — key 3">🃏</button>
+      </div>
+
+      <!-- Opponents strip -->
+      <div class="opp-strip" id="oppStrip"></div>
+
+      <!-- Shared foundations -->
+      <div class="foundations" id="foundations"></div>
+
+      <!-- Player's board -->
+      <div class="player-board">
+        <div class="board-left">
+          <div class="pile-slot" id="nertzSlot" data-zone="nertz">
+            <div class="pile-label">Nertz</div>
+          </div>
+          <div class="stock-row">
+            <div class="pile-slot stock" id="stockSlot" data-zone="stock">
+              <div class="pile-label">Stock</div>
+            </div>
+            <div class="pile-slot waste" id="wasteSlot" data-zone="waste">
+              <div class="pile-label">Waste</div>
+            </div>
+          </div>
+        </div>
+        <div class="work-row" id="workRow"></div>
+      </div>
+    </main>
+
+    <!-- ===================== OVERLAYS ===================== -->
+    <div class="overlay" id="overlayRound">
+      <div class="sheet result-sheet">
+        <div class="result-emoji" id="resultEmoji">🎉</div>
+        <h2 class="result-title" id="resultTitle">Round over</h2>
+        <div class="result-table" id="resultTable"></div>
+        <div class="reward-row" id="rewardRow"></div>
+        <div class="sheet-actions">
+          <button class="btn btn-ghost" id="resultMenu">Menu</button>
+          <button class="btn btn-primary" id="resultAgain">Play again</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="overlay" id="overlayPanel">
+      <div class="sheet panel-sheet">
+        <button class="sheet-close" id="panelClose">✕</button>
+        <div class="panel-tabs">
+          <button class="ptab on" data-tab="stats">Stats</button>
+          <button class="ptab" data-tab="ach">Achievements</button>
+          <button class="ptab" data-tab="board">Leaderboard</button>
+          <button class="ptab" data-tab="settings">Settings</button>
+          <button class="ptab" data-tab="studio">Studio</button>
+        </div>
+        <div class="panel-body" id="panelBody"></div>
+      </div>
+    </div>
+
+    <div class="toast-host" id="toastHost"></div>
+    <div class="fx-layer" id="fxLayer"></div>
+  </div>
+
+  <script src="js/deck.js"></script>
+  <script src="js/themes.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/engine.js"></script>
+  <script src="js/ai.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/progression.js"></script>
+  <script src="js/story-content.js"></script>
+  <script src="js/story-content2.js"></script>
+  <script src="js/story.js"></script>
+  <script src="js/studio.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/minigames/poker.js"></script>
+  <script src="js/minigames/blackjack.js"></script>
+  <script src="js/minigames/golf.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

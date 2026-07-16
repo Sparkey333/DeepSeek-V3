@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Nertz Royale — Project Tracker</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #071c14;
+    --panel: #0c2a1f;
+    --panel-2: #103628;
+    --line: #1c4535;
+    --line-soft: #163a2c;
+    --ink: #eaf3ef;
+    --ink-dim: #9dc0b1;
+    --ink-faint: #6f9585;
+    --gold: #f5c451;
+    --gold-deep: #caa032;
+    --spade: #4bd6a0;
+    --heart: #ef6e7f;
+    --diamond: #f5c451;
+    --club: #5cc6d8;
+    --ok: #4bd6a0;
+    --wip: #f0b64a;
+    --plan: #7f9e93;
+    --shadow: 0 14px 40px rgba(0,0,0,.45);
+    --radius: 16px;
+    --maxw: 1080px;
+    --serif: Georgia, "Iowan Old Style", "Times New Roman", serif;
+    --sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --mono: ui-monospace, "SF Mono", "SFMono-Regular", "Roboto Mono", Menlo, monospace;
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme]) {
+      --bg: #eee6d2; --panel: #f7f1e2; --panel-2: #fbf6ea;
+      --line: #d8cbaa; --line-soft: #e4d9bd;
+      --ink: #22301f; --ink-dim: #5c6a52; --ink-faint: #8a9382;
+      --gold: #9a6d12; --gold-deep: #7c570c;
+      --spade: #157a56; --heart: #b83a48; --diamond: #9a6d12; --club: #1d7f93;
+      --ok: #157a56; --wip: #9a6d12; --plan: #7d8a7a;
+      --shadow: 0 14px 34px rgba(90,74,30,.2);
+    }
+  }
+  :root[data-theme="light"] {
+    --bg: #eee6d2; --panel: #f7f1e2; --panel-2: #fbf6ea;
+    --line: #d8cbaa; --line-soft: #e4d9bd;
+    --ink: #22301f; --ink-dim: #5c6a52; --ink-faint: #8a9382;
+    --gold: #9a6d12; --gold-deep: #7c570c;
+    --spade: #157a56; --heart: #b83a48; --diamond: #9a6d12; --club: #1d7f93;
+    --ok: #157a56; --wip: #9a6d12; --plan: #7d8a7a;
+    --shadow: 0 14px 34px rgba(90,74,30,.2);
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } * { transition: none !important; animation: none !important; } }
+  body {
+    margin: 0; font-family: var(--sans); color: var(--ink);
+    background: radial-gradient(120% 80% at 50% -10%, var(--panel) 0%, var(--bg) 60%), var(--bg);
+    background-attachment: fixed; line-height: 1.5; -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; }
+  .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 22px; }
+
+  header.top { position: sticky; top: 0; z-index: 20;
+    background: color-mix(in srgb, var(--bg) 82%, transparent);
+    backdrop-filter: blur(10px); border-bottom: 1px solid var(--line-soft); }
+  .top-in { display: flex; align-items: center; gap: 16px; padding: 12px 0; }
+  .mark { display: flex; align-items: center; gap: 10px; font-weight: 800; letter-spacing: -.02em; }
+  .mark .suit { font-family: var(--serif); font-size: 20px;
+    background: linear-gradient(135deg, var(--gold), var(--heart));
+    -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .mark b { font-size: 17px; }
+  .mark b span { color: var(--gold); }
+  .mark small { display: block; font-weight: 600; font-size: 11px; color: var(--ink-faint);
+    letter-spacing: .14em; text-transform: uppercase; margin-top: 1px; }
+  .top-actions { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+  .btn { display: inline-flex; align-items: center; gap: 7px; padding: 9px 15px; border-radius: 11px;
+    font-weight: 700; font-size: 13.5px; text-decoration: none; border: 1px solid var(--line);
+    background: var(--panel); color: var(--ink); cursor: pointer; transition: transform .12s, border-color .15s, background .15s; }
+  .btn:hover { transform: translateY(-1px); border-color: var(--gold); }
+  .btn.play { background: linear-gradient(180deg, var(--gold), var(--gold-deep)); color: #241a02; border: 0; }
+  .btn.play:hover { filter: brightness(1.05); }
+  .icon-only { padding: 9px 11px; }
+
+  .hero { padding: 40px 0 8px; }
+  .hero h1 { font-family: var(--serif); font-weight: 700; letter-spacing: -.02em;
+    font-size: clamp(30px, 5.2vw, 52px); line-height: 1.02; margin: 0 0 10px; text-wrap: balance; }
+  .hero h1 em { font-style: italic; color: var(--gold); }
+  .hero p { max-width: 60ch; color: var(--ink-dim); font-size: 16px; margin: 0 0 4px; }
+  .hero .meta { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center;
+    font-family: var(--mono); font-size: 12.5px; color: var(--ink-faint); }
+  .hero .meta b { color: var(--ink-dim); font-weight: 600; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 25%, transparent); display: inline-block; }
+
+  .tiles { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin: 26px 0 6px; }
+  .tile { background: var(--panel); border: 1px solid var(--line-soft); border-radius: 14px; padding: 14px 15px; }
+  .tile .v { font-family: var(--serif); font-size: 30px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+  .tile .v small { font-size: 15px; color: var(--ink-faint); }
+  .tile .k { margin-top: 6px; font-size: 11px; text-transform: uppercase; letter-spacing: .09em; color: var(--ink-faint); }
+  @media (max-width: 860px) { .tiles { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 480px) { .tiles { grid-template-columns: repeat(2, 1fr); } }
+
+  section { padding: 30px 0; }
+  .sec-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 16px; }
+  .sec-head h2 { font-family: var(--serif); font-size: 22px; font-weight: 700; margin: 0; letter-spacing: -.01em; }
+  .sec-head .rule { flex: 1; height: 1px; background: linear-gradient(90deg, var(--line), transparent); }
+  .sec-head .count { font-family: var(--mono); font-size: 12px; color: var(--ink-faint); }
+
+  .rail { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+  .ch { background: var(--panel); border: 1px solid var(--line-soft); border-radius: 14px; padding: 14px; position: relative; overflow: hidden; }
+  .ch::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--heart); opacity: .5; }
+  .ch.done::before { opacity: 1; }
+  .ch .n { font-family: var(--mono); font-size: 11px; color: var(--ink-faint); }
+  .ch h3 { font-family: var(--serif); font-size: 15.5px; margin: 4px 0 6px; font-weight: 700; line-height: 1.15; }
+  .ch p { font-size: 12px; color: var(--ink-dim); margin: 0 0 10px; min-height: 32px; }
+  .ch .st { font-size: 11px; font-weight: 700; letter-spacing: .04em; }
+  .ch.done .st { color: var(--ok); } .ch.spec .st { color: var(--wip); } .ch.plan .st { color: var(--plan); }
+  @media (max-width: 780px) { .rail { grid-template-columns: repeat(2, 1fr); } }
+
+  .pillars { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+  .pill { display: inline-flex; align-items: center; gap: 7px; padding: 6px 12px; border-radius: 999px;
+    border: 1px solid var(--line); background: var(--panel); font-size: 12.5px; font-weight: 600; }
+  .pill .g { font-family: var(--serif); }
+  .pill.s .g { color: var(--spade); } .pill.h .g { color: var(--heart); }
+  .pill.d .g { color: var(--diamond); } .pill.c .g { color: var(--club); }
+
+  .lane { margin-bottom: 26px; }
+  .lane > h3 { display: flex; align-items: center; gap: 9px; font-size: 13px; font-weight: 800;
+    text-transform: uppercase; letter-spacing: .1em; color: var(--ink-dim); margin: 0 0 12px; }
+  .lane > h3 .badge { font-family: var(--mono); font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px;
+    background: var(--panel-2); border: 1px solid var(--line); letter-spacing: 0; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+  .card { background: var(--panel); border: 1px solid var(--line-soft); border-radius: 14px; padding: 15px 16px;
+    display: flex; flex-direction: column; gap: 9px; transition: border-color .15s, transform .12s; }
+  .card:hover { border-color: color-mix(in srgb, var(--suit, var(--gold)) 55%, var(--line)); transform: translateY(-2px); }
+  .card .row1 { display: flex; align-items: flex-start; gap: 9px; }
+  .card .suit-chip { font-family: var(--serif); font-size: 17px; line-height: 1; margin-top: 1px; color: var(--suit, var(--gold)); }
+  .card h4 { margin: 0; font-size: 15px; font-weight: 700; letter-spacing: -.01em; flex: 1; }
+  .card .status { font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em;
+    padding: 3px 8px; border-radius: 999px; white-space: nowrap; }
+  .status.ok { color: var(--ok); background: color-mix(in srgb, var(--ok) 15%, transparent); }
+  .status.wip { color: var(--wip); background: color-mix(in srgb, var(--wip) 16%, transparent); }
+  .status.plan { color: var(--plan); background: color-mix(in srgb, var(--plan) 16%, transparent); }
+  .card p.note { margin: 0; font-size: 12.5px; color: var(--ink-dim); }
+  .bar { height: 7px; border-radius: 4px; background: var(--panel-2); overflow: hidden; border: 1px solid var(--line-soft); }
+  .bar > i { display: block; height: 100%; border-radius: 4px; background: var(--suit, var(--gold)); }
+  .card .foot { display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    font-family: var(--mono); font-size: 11px; color: var(--ink-faint); }
+  .card .foot .pct { color: var(--ink-dim); font-weight: 600; }
+
+  .links { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
+  .link { display: flex; align-items: center; gap: 12px; text-decoration: none; padding: 14px 15px;
+    border: 1px solid var(--line-soft); border-radius: 14px; background: var(--panel); transition: border-color .15s, transform .12s; }
+  .link:hover { border-color: var(--gold); transform: translateY(-2px); }
+  .link .ico { font-size: 20px; width: 26px; text-align: center; }
+  .link .t { font-weight: 700; font-size: 14px; }
+  .link .d { font-size: 12px; color: var(--ink-faint); }
+
+  .log { border-left: 2px solid var(--line); margin-left: 6px; padding-left: 20px; display: flex; flex-direction: column; gap: 18px; }
+  .entry { position: relative; }
+  .entry::before { content: ""; position: absolute; left: -27px; top: 5px; width: 11px; height: 11px; border-radius: 50%;
+    background: var(--panel); border: 2px solid var(--gold); }
+  .entry.head::before { background: var(--gold); }
+  .entry .sha { font-family: var(--mono); font-size: 11.5px; color: var(--gold-deep); }
+  .entry h4 { margin: 3px 0 4px; font-size: 15px; font-weight: 700; }
+  .entry p { margin: 0; font-size: 13px; color: var(--ink-dim); max-width: 70ch; }
+  .entry .when { font-family: var(--mono); font-size: 11px; color: var(--ink-faint); }
+
+  footer { padding: 34px 0 50px; color: var(--ink-faint); font-size: 12.5px; border-top: 1px solid var(--line-soft); margin-top: 20px; }
+  footer a { color: var(--gold-deep); }
+  footer code { font-family: var(--mono); font-size: 11.5px; }
+  :focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; border-radius: 6px; }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap top-in">
+    <a class="mark" href="#top" style="text-decoration:none">
+      <span class="suit">&#9824;&#9829;</span>
+      <b>Nertz<span>Royale</span><small>Project Tracker</small></b>
+    </a>
+    <div class="top-actions">
+      <a class="btn play" href="Nertz-Royale.html">&#9654; Play latest</a>
+      <a class="btn" href="https://github.com/Sparkey333/DeepSeek-V3/actions/runs/29178837014" target="_blank" rel="noopener">&#11015; Get the .dmg</a>
+      <button class="btn icon-only" id="theme" title="Toggle light / dark" aria-label="Toggle theme">&#9790;</button>
+    </div>
+  </div>
+</header>
+
+<a id="top"></a>
+<main class="wrap">
+  <section class="hero">
+    <h1>A seaside card club, <em>rebuilt in the open.</em></h1>
+    <p>Live status for <b>Nertz Royale</b> &mdash; the real-time solitaire race and its <em>Gullwash Saga</em> story mode. One glance: what&rsquo;s shipped, what&rsquo;s on the table, and where every build and doc lives.</p>
+    <div class="meta">
+      <span><span class="dot"></span> <b>Branch</b> claude/nertz-card-game-app-ukt44p</span>
+      <span><b>Latest build</b> b1d11bf</span>
+      <span><b>CI</b> &#9989; mac &middot; win &middot; linux</span>
+      <span id="stamp"></span>
+    </div>
+    <div class="tiles" id="tiles"></div>
+  </section>
+
+  <section>
+    <div class="sec-head"><h2>The Gullwash Saga</h2><span class="rule"></span><span class="count" id="sagaCount"></span></div>
+    <div class="rail" id="rail"></div>
+  </section>
+
+  <section>
+    <div class="sec-head"><h2>Milestones</h2><span class="rule"></span><span class="count" id="mileCount"></span></div>
+    <div class="pillars">
+      <span class="pill s"><span class="g">&#9824;</span> Core &amp; Play</span>
+      <span class="pill h"><span class="g">&#9829;</span> Story &amp; World</span>
+      <span class="pill d"><span class="g">&#9830;</span> Economy &amp; Meta</span>
+      <span class="pill c"><span class="g">&#9827;</span> Platform &amp; Ship</span>
+    </div>
+    <div id="board"></div>
+  </section>
+
+  <section>
+    <div class="sec-head"><h2>Jump to</h2><span class="rule"></span></div>
+    <div class="links" id="links"></div>
+  </section>
+
+  <section>
+    <div class="sec-head"><h2>Build history</h2><span class="rule"></span></div>
+    <div class="log" id="log"></div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    Nertz Royale is a from-scratch, zero-dependency browser card game (with an Electron/Tauri desktop wrapper). This tracker is a static page in the repo &mdash; edit the data arrays at the top of its <code>&lt;script&gt;</code> to update it. Built in the open on
+    <a href="https://github.com/Sparkey333/DeepSeek-V3/pull/1" target="_blank" rel="noopener">PR&nbsp;#1</a>.
+  </div>
+</footer>
+
+<script>
+  const SUIT = { s:{g:"♠",c:"var(--spade)"}, h:{g:"♥",c:"var(--heart)"}, d:{g:"♦",c:"var(--diamond)"}, c:{g:"♣",c:"var(--club)"} };
+
+  const TILES = [
+    { v:"13", k:"Epics shipped" },
+    { v:"2<small>/5</small>", k:"Story chapters" },
+    { v:"8", k:"Game modes" },
+    { v:"3", k:"Mini-games" },
+    { v:"6", k:"Table themes" },
+    { v:"24", k:"Story quests" },
+  ];
+
+  const SAGA = [
+    { n:"Chapter I", t:"The Sandpiper Revival", d:"Reopen the boarded-up club, gather the chorus.", st:"done", cls:"done" },
+    { n:"Chapter II", t:"The Undertow", d:"Learn the charms; the gray tide notices the lights.", st:"done", cls:"done" },
+    { n:"Chapter III", t:"The Room Below", d:"The rigged duel — you lose your luck. Luckless arc.", st:"specced", cls:"spec" },
+    { n:"Chapter IV", t:"The Ante", d:"The town stakes you; the Dealer stakes the town.", st:"planned", cls:"plan" },
+    { n:"Chapter V", t:"Founder's Day", d:"The last hand — you fold your win forward.", st:"planned", cls:"plan" },
+  ];
+
+  const EPICS = [
+    { s:"s", t:"Core engine & rules", note:"Real-time race, shared foundations, variant rules (pile size, work piles, stock flip).", pct:100, st:"ok", ref:"engine.js" },
+    { s:"s", t:"AI opponents", note:"Greedy foundation bots, 3 difficulties, speed multipliers, hex-able status effects.", pct:100, st:"ok", ref:"ai.js" },
+    { s:"s", t:"Card art & animation", note:"French-deck pip faces, court monograms, aces; serialized fly-to-centre, one card at a time.", pct:100, st:"ok", ref:"ui.js" },
+    { s:"s", t:"Eight game modes", note:"Fast · Blitz · Wild · Zen · Ranked · Tournament · Daily · Story — each plays differently.", pct:100, st:"ok", ref:"main.js" },
+    { s:"c", t:"Sound design", note:"Synthesized card snaps, chimes, fanfares, hex & haunt cues — zero audio files.", pct:100, st:"ok", ref:"audio.js" },
+    { s:"c", t:"Themes & duality", note:"6 table skins, day/night chrome flip, classic vs minimal card faces.", pct:100, st:"ok", ref:"themes.js" },
+    { s:"d", t:"Progression & meta", note:"XP, levels, coins, achievements, local leaderboard, stats — all persisted.", pct:100, st:"ok", ref:"progression.js" },
+    { s:"d", t:"Charms & Hexes battle", note:"Bank cards → sparks → Frost / Fog / Jinx rivals; haunt surges freeze your stock.", pct:100, st:"ok", ref:"main.js" },
+    { s:"h", t:"Mini-games ×3", note:"Heads-up poker (full ranking), blackjack (S17, 3:2), golf solitaire.", pct:100, st:"ok", ref:"minigames/" },
+    { s:"h", t:"Story: Ch. I — Revival", note:"14 quests across 6 locations; cast, dialogue, objectives, rewards.", pct:100, st:"ok", ref:"story-content.js" },
+    { s:"h", t:"Story: Ch. II — Undertow", note:"10 quests; the gray economy, the Grayed, Preston's turn, the Dealer's invitation.", pct:100, st:"ok", ref:"story-content2.js" },
+    { s:"c", t:"Asset Studio (BYOK)", note:"Bring-your-own-key Higgsfield connection; generate → preview → apply theme art live.", pct:100, st:"ok", ref:"studio.js" },
+    { s:"c", t:"Desktop & CI", note:"Electron .dmg / .exe / AppImage + Tauri; GitHub Actions builds on every push.", pct:100, st:"ok", ref:"nertz-desktop.yml" },
+    { s:"h", t:"Story: Ch. III — Room Below", note:"Rigged duel, luckless arc, hexless race, ally bots — fully spec'd in the bible.", pct:35, st:"wip", ref:"STORY_BIBLE.md" },
+    { s:"c", t:"Theme artwork", note:"Procedural today; Studio wired to swap in generated card backs & tables per theme.", pct:30, st:"wip", ref:"ASSETS_BRIEF.md" },
+    { s:"h", t:"Story: Ch. IV–V finale", note:"The town-ante, the Collector's defection, the fold-forward last hand.", pct:0, st:"plan", ref:"—" },
+    { s:"d", t:"Spark economy & balance", note:"Tune charge rate, hex strength & haunt cadence from playtest data.", pct:0, st:"plan", ref:"—" },
+    { s:"d", t:"Cosmetics shop", note:"Spend coins on card backs & felts; wallet & Studio hooks already exist.", pct:0, st:"plan", ref:"—" },
+    { s:"s", t:"Online multiplayer", note:"Real-time rooms; the deterministic seeded engine is ready for it.", pct:0, st:"plan", ref:"—" },
+    { s:"c", t:"Accessibility pass", note:"Full keyboard play, colorblind suits, screen-reader labels (reduce-motion shipped).", pct:10, st:"plan", ref:"—" },
+  ];
+
+  const LINKS = [
+    { ico:"▶", t:"Play the game", d:"Latest self-contained build", href:"Nertz-Royale.html" },
+    { ico:"⬇", t:"Desktop installers", d:".dmg · .exe · AppImage (CI)", href:"https://github.com/Sparkey333/DeepSeek-V3/actions/runs/29178837014" },
+    { ico:"📖", t:"Story bible", d:"The Gullwash Saga, ch. 1–5", href:"STORY_BIBLE.md" },
+    { ico:"🎨", t:"Asset brief", d:"Prompts & specs for art", href:"ASSETS_BRIEF.md" },
+    { ico:"🖥️", t:"Desktop guide", d:"Build & run natively", href:"DESKTOP.md" },
+    { ico:"🔀", t:"Pull request #1", d:"Full change history", href:"https://github.com/Sparkey333/DeepSeek-V3/pull/1" },
+    { ico:"📁", t:"Source (branch)", d:"Browse the nertz/ tree", href:"https://github.com/Sparkey333/DeepSeek-V3/tree/claude/nertz-card-game-app-ukt44p/nertz" },
+    { ico:"📄", t:"README", d:"Overview & how to play", href:"README.md" },
+  ];
+
+  const LOG = [
+    { sha:"b1d11bf", head:true, t:"Asset Studio — BYOK Higgsfield generator", when:"latest", p:"Admin panel to generate & test theme art live with your own key." },
+    { sha:"048c874", t:"Story saga + Charms & Hexes + Chapter II", when:"", p:"Snowflake story bible, the battle/hex system, and 'The Undertow'." },
+    { sha:"c8d18b1", t:"Full revamp — 8 modes + story pilot", when:"", p:"Rule variants, Blitz/Wild/Tournament, and the Sandpiper Revival campaign." },
+    { sha:"418e4ff", t:"Realistic cards, sound, flights, skins", when:"", p:"Pip card faces, synth audio, serialized flights, and the first extra themes." },
+    { sha:"earlier", t:"Core game, themes & desktop packaging", when:"", p:"The Nertz engine, bots, progression, and the Electron/Tauri + CI pipeline." },
+  ];
+
+  const $ = (s) => document.querySelector(s);
+  const el = (t, c, h) => { const e = document.createElement(t); if (c) e.className = c; if (h != null) e.innerHTML = h; return e; };
+
+  $("#tiles").append(...TILES.map(x => el("div","tile", '<div class="v">'+x.v+'</div><div class="k">'+x.k+'</div>')));
+
+  $("#rail").append(...SAGA.map(c => el("div","ch "+c.cls,
+    '<div class="n">'+c.n+'</div><h3>'+c.t+'</h3><p>'+c.d+'</p><div class="st">'+(c.cls==="done"?"✓ ":"")+c.st.toUpperCase()+'</div>')));
+  $("#sagaCount").textContent = SAGA.filter(c=>c.cls==="done").length + " of " + SAGA.length + " chapters live";
+
+  const LANES = [
+    { key:"ok", label:"Shipped", pred: e=>e.st==="ok" },
+    { key:"wip", label:"In progress", pred: e=>e.st==="wip" },
+    { key:"plan", label:"Roadmap", pred: e=>e.st==="plan" },
+  ];
+  const board = $("#board");
+  LANES.forEach(L => {
+    const items = EPICS.filter(L.pred);
+    const lane = el("div","lane");
+    lane.append(el("h3", null, L.label+' <span class="badge">'+items.length+'</span>'));
+    const cards = el("div","cards");
+    items.forEach(e => {
+      const s = SUIT[e.s];
+      const card = el("div","card");
+      card.style.setProperty("--suit", s.c);
+      const statusLabel = e.st==="ok" ? "Shipped" : e.st==="wip" ? "Building" : "Planned";
+      card.innerHTML =
+        '<div class="row1"><span class="suit-chip">'+s.g+'</span><h4>'+e.t+'</h4><span class="status '+e.st+'">'+statusLabel+'</span></div>'+
+        '<p class="note">'+e.note+'</p>'+
+        '<div class="bar"><i style="width:'+e.pct+'%"></i></div>'+
+        '<div class="foot"><span>'+e.ref+'</span><span class="pct">'+e.pct+'%</span></div>';
+      cards.append(card);
+    });
+    lane.append(cards);
+    board.append(lane);
+  });
+  $("#mileCount").textContent = EPICS.filter(e=>e.st==="ok").length + " shipped · " + EPICS.filter(e=>e.st!=="ok").length + " ahead";
+
+  $("#links").append(...LINKS.map(x => {
+    const a = el("a","link"); a.href = x.href;
+    if (x.href.indexOf("http")===0) { a.target="_blank"; a.rel="noopener"; }
+    a.innerHTML = '<span class="ico">'+x.ico+'</span><span><span class="t">'+x.t+'</span><br><span class="d">'+x.d+'</span></span>';
+    return a;
+  }));
+
+  $("#log").append(...LOG.map(x => el("div","entry"+(x.head?" head":""),
+    '<span class="sha">'+x.sha+'</span>'+(x.when?' · <span class="when">'+x.when+'</span>':"")+'<h4>'+x.t+'</h4><p>'+x.p+'</p>')));
+
+  const root = document.documentElement, tbtn = $("#theme");
+  const sysDark = matchMedia("(prefers-color-scheme: dark)");
+  function curDark(){ const t = root.getAttribute("data-theme"); return t ? t==="dark" : sysDark.matches; }
+  function paint(){ tbtn.innerHTML = curDark() ? "☀" : "☾"; }
+  tbtn.addEventListener("click", () => { root.setAttribute("data-theme", curDark() ? "light" : "dark"); paint(); });
+  sysDark.addEventListener("change", paint); paint();
+
+  $("#stamp").innerHTML = "<b>Tracker</b> auto-rendered from repo data";
+</script>
+</body>
+</html>
