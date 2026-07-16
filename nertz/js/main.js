@@ -13,7 +13,7 @@
     bots: [],
     foundations: [],
     mode: "fast",
-    cfg: { opponents: 2, difficulty: "normal" },
+    cfg: { opponents: 3, difficulty: "normal" },
     timer: null,
     startTime: 0,
     running: false,
@@ -24,7 +24,7 @@
     App.save = Nertz.store.load();
     App.ui = new Nertz.UI();
     App.ui.setApi({
-      tap: onTap, drop: onDrop, flipStock: onFlipStock,
+      tap: onTap, drop: onDrop, flipStock: onFlipStock, doubleTap: onDoubleTap,
     });
     applySettings();
     refreshLevelChip();
@@ -119,6 +119,10 @@
     return picks;
   }
 
+  const MODE_LABELS = {
+    fast: "Fast Play", blitz: "Blitz", wild: "Wild Shuffle", zen: "Zen Solo",
+    ranked: "Ranked Race", daily: "Daily", story: "Story",
+  };
   const MODE_BANNERS = {
     fast: "⚡ Fast Play · 1v1 — first to empty Nertz wins",
     blitz: "🌀 Blitz · 7-card Nertz, single flips, turbo bot",
@@ -197,13 +201,13 @@
       App.wildMutators = pickWildMutators();
       App.wildMutators.forEach((m) => { Object.assign(rules, m.rules || {}); if (m.botSpeed) botSpeed = m.botSpeed; });
       App.xpMult = 1.25;
-      for (let i = 0; i < 2; i++) {
+      for (let i = 0; i < 3; i++) {
         botSpecs.push({ name: Nertz.PROFILES[App.cfg.difficulty].name + " " + (i + 1), avatar: Nertz.AVATARS[(i + 2) % Nertz.AVATARS.length], difficulty: App.cfg.difficulty });
       }
     } else if (mode === "tournament") {
       App.tournament = App.tournament || { round: 0, totals: {}, founded: 0, wins: 0 };
       App.tournament.round++;
-      for (let i = 0; i < 2; i++) {
+      for (let i = 0; i < 3; i++) {
         botSpecs.push({ name: Nertz.PROFILES[App.cfg.difficulty].name + " " + (i + 1), avatar: Nertz.AVATARS[i % Nertz.AVATARS.length], difficulty: App.cfg.difficulty });
       }
     } else if (!isZen) {
@@ -237,6 +241,7 @@
       App.ui.toast("🎲 " + App.wildMutators.map((m) => m.name + " (" + m.desc + ")").join(" · "), true);
     }
 
+    document.body.dataset.mode = mode; // per-mode visual identity (see style.css)
     updateModeBanner();
     showScreen("game");
     App.ui.render(App.engine);
@@ -397,6 +402,16 @@
       flyToFoundation(card, fromRect, false);
     }
   }
+  // Double-tap / double-click anywhere on the table sweeps every playable card
+  // to the foundations — but only when the "double-tap to auto-play" setting is on.
+  function onDoubleTap() {
+    if (!App.running || !App.save.settings.autoDouble) return;
+    // desktop fires both a native dblclick and the pointer double-tap — dedupe
+    const now = Date.now();
+    if (now - (App._lastAutoSweep || 0) < 400) return;
+    App._lastAutoSweep = now;
+    autoPlay();
+  }
   function onDrop(source, target, fromRect) {
     if (!App.running) return;
     const card = App.engine.peek(source);
@@ -488,10 +503,17 @@
     s.totalFoundationCards += me.founded;
     // bestScore uses a JSON-safe null sentinel (−Infinity becomes null on save).
     if (s.bestScore == null || me.score > s.bestScore) s.bestScore = me.score;
+    App._newRecord = false;
     if (won) {
       s.wins++; s.streak++; s.bestStreak = Math.max(s.bestStreak, s.streak);
       if (s.fastestNertzMs == null || timeMs < s.fastestNertzMs) s.fastestNertzMs = timeMs;
       if (s.bestTimeMs == null || timeMs < s.bestTimeMs) s.bestTimeMs = timeMs;
+      // per-mode time record (Tournament's clock is per-round & score-based — skip)
+      if (App.mode !== "tournament") {
+        if (!s.bestTimeByMode) s.bestTimeByMode = {};
+        const prev = s.bestTimeByMode[App.mode];
+        if (prev == null || timeMs < prev) { s.bestTimeByMode[App.mode] = timeMs; App._newRecord = true; }
+      }
     } else { s.streak = 0; }
     App.save._flags = Object.assign(App.save._flags || {}, { beatHard: (App.save._flags && App.save._flags.beatHard) || beatHard });
 
@@ -573,10 +595,12 @@
     } else {
       rr.append(pill("", "⏱ " + fmtTime(timeMs)), pill("", me.founded + " to foundations"));
     }
+    if (App._newRecord) rr.append(pill("record", "⏱ New record!"));
 
     $("#overlayRound").classList.add("show");
 
     if (won) { App.ui.confetti(); sfx("win"); } else { sfx("lose"); }
+    if (App._newRecord) setTimeout(() => { App.ui.toast("⏱ New " + (MODE_LABELS[App.mode] || App.mode) + " record: " + fmtTime(timeMs) + "!", true); sfx("levelup"); }, 350);
     if (App._levelUp.leveledUp) setTimeout(() => { App.ui.toast("Level up! You reached level " + App._levelUp.to + " 🎉", true); sfx("levelup"); }, 500);
     (App._unlocked || []).forEach((a, i) =>
       setTimeout(() => App.ui.toast(a.icon + "  Unlocked: " + a.name, true), 900 + i * 700));
@@ -599,6 +623,7 @@
 
   function backToMenu() {
     stopRound();
+    delete document.body.dataset.mode;
     showScreen("menu");
   }
 
@@ -617,6 +642,8 @@
     $("#hexJinx").addEventListener("click", () => castHex("jinx"));
     $("#btnAuto").addEventListener("click", autoPlay);
     $("#btnRestart").addEventListener("click", restartMode);
+    // desktop double-click anywhere on the board = the same auto-fill sweep
+    $("#screenGame").addEventListener("dblclick", onDoubleTap);
     wireKeyboard();
   }
 
@@ -628,7 +655,7 @@
     while (moved && App.running) {
       moved = false;
       const tries = [{ zone: "nertz" }, { zone: "waste" }];
-      for (let i = 0; i < 4; i++) tries.push({ zone: "work", pileIndex: i, cardIndex: App.engine.work[i].length - 1 });
+      for (let i = 0; i < App.engine.work.length; i++) tries.push({ zone: "work", pileIndex: i, cardIndex: App.engine.work[i].length - 1 });
       for (const s of tries) if (App.engine.playToFoundation(s)) { moved = true; total++; }
     }
     if (total) { App.ui.render(App.engine); syncHud(); sfx("foundation"); App.ui.toast("Auto-played " + total + " card" + (total > 1 ? "s" : "") + " ⤴"); }
@@ -730,6 +757,20 @@
       box("Fastest win", s.fastestNertzMs ? fmtTime(s.fastestNertzMs) : "—"),
     );
     wrap.appendChild(grid);
+
+    // Best times per mode (only modes you've actually won)
+    const byMode = s.bestTimeByMode || {};
+    const modes = Object.keys(MODE_LABELS).filter((m) => byMode[m] != null);
+    if (modes.length) {
+      wrap.appendChild(el("div", "set-row", "")).append(el("span", null, "Best times"));
+      const list = el("div", "besttime-list");
+      modes.sort((a, b) => byMode[a] - byMode[b]).forEach((m) => {
+        const row = el("div", "res-row");
+        row.append(el("div", "res-name", MODE_LABELS[m]), el("div", "res-score", fmtTime(byMode[m])));
+        list.appendChild(row);
+      });
+      wrap.appendChild(list);
+    }
     return wrap;
   }
 
@@ -816,6 +857,7 @@
       return row;
     };
     wrap.append(
+      toggle("Double-tap to auto-play", "autoDouble"),
       toggle("Sound effects", "sound"),
       toggle("Left-handed layout", "leftHanded"),
       toggle("Reduce motion", "reduceMotion"),

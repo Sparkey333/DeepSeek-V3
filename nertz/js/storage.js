@@ -29,6 +29,7 @@
       stats: {
         gamesPlayed: 0, wins: 0, bestScore: null, bestTimeMs: null,
         totalFoundationCards: 0, fastestNertzMs: null, streak: 0, bestStreak: 0,
+        bestTimeByMode: {},    // mode -> fastest winning time (ms)
       },
       achievements: {},        // id -> unlockedAt
       leaderboard: [],         // [{name, score, mode, date, timeMs}]
@@ -36,7 +37,7 @@
       adventure: { cleared: {} }, // legacy (pre-story saves)
       story: { step: 0, unlocked: {} },
       settings: { sound: true, leftHanded: false, reduceMotion: false, theme: "classic",
-                  dayMode: false, cardForm: "trad" },
+                  dayMode: false, cardForm: "trad", autoDouble: false },
     };
   }
 

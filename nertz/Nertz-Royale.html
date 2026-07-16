@@ -298,6 +298,13 @@ body.left-handed .player-board { flex-direction: row-reverse; }
   padding: 7px 14px; font-weight: 800; font-size: 14px; }
 .reward-pill.xp { color: var(--accent); }
 .reward-pill.coin { color: var(--gold); }
+.reward-pill.record {
+  color: #0c1a14; background: linear-gradient(180deg, var(--gold), #d8a017);
+  border-color: rgba(255,255,255,0.25); animation: recordPop .5s var(--ease, ease) both;
+}
+@keyframes recordPop { 0% { transform: scale(.6); opacity: 0; } 60% { transform: scale(1.12); } 100% { transform: scale(1); opacity: 1; } }
+.besttime-list { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
+.besttime-list .res-score { color: var(--accent); }
 
 .sheet-actions { display: flex; gap: 10px; }
 .btn { flex: 1; padding: 13px; border-radius: 12px; border: 0; font-weight: 800; font-size: 15px; cursor: pointer; transition: .15s; }
@@ -463,8 +470,31 @@ body.theme-has-assets .card.face-down {
 }
 body.theme-has-assets .card.face-down::after { content: none; }
 
+/* ---- Per-mode visual identity ----
+ * Each game mode carries a signature accent so the table reads differently at
+ * a glance (reinforcing the already-distinct rulesets). Set on <body data-mode>. */
+body[data-mode]           { --mode-accent: var(--accent); }
+body[data-mode="fast"]    { --mode-accent: #2fd6b0; }
+body[data-mode="blitz"]   { --mode-accent: #ff7a45; }
+body[data-mode="wild"]    { --mode-accent: #b07cff; }
+body[data-mode="zen"]     { --mode-accent: #7fb4ff; }
+body[data-mode="ranked"]  { --mode-accent: var(--gold); }
+body[data-mode="tournament"] { --mode-accent: var(--gold); }
+body[data-mode="daily"]   { --mode-accent: #5fb0e6; }
+body[data-mode="story"]   { --mode-accent: #ff6b6b; }
+/* a hairline of the mode accent under the HUD ties the whole board together */
+body[data-mode] .game-hud { box-shadow: inset 0 -2px 0 -1px color-mix(in srgb, var(--mode-accent) 55%, transparent); }
+body[data-mode] .spark-pips { color: var(--mode-accent); }
+
 /* ---- Mode banner (in-game, varies per mode) ---- */
 .mode-banner { text-align: center; font-size: 12px; font-weight: 700; color: var(--text-dim); padding: 0 14px 4px; letter-spacing: 0.02em; min-height: 16px; }
+.mode-banner.show {
+  color: var(--mode-accent, var(--text-dim));
+  border-top: 1px solid color-mix(in srgb, var(--mode-accent) 45%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--mode-accent) 45%, transparent);
+  padding: 4px 14px;
+  background: color-mix(in srgb, var(--mode-accent) 9%, transparent);
+}
 .mode-banner.mode-adventure { color: var(--gold); }
 .mode-banner.mode-ranked { color: var(--accent); }
 .mode-banner.mode-daily { color: #7fb4ff; }
@@ -729,8 +759,8 @@ body.day-mode .studio-group, body.day-mode .studio-note { background: rgba(255,2
       <div class="menu-config" id="menuConfig">
         <div class="cfg-row">
           <span class="cfg-label">Opponents</span>
-          <div class="seg" id="cfgOpponents" data-val="2">
-            <button data-v="1">1</button><button data-v="2" class="on">2</button><button data-v="3">3</button>
+          <div class="seg" id="cfgOpponents" data-val="3">
+            <button data-v="1">1</button><button data-v="2">2</button><button data-v="3" class="on">3</button>
           </div>
         </div>
         <div class="cfg-row">
@@ -1481,6 +1511,7 @@ body.day-mode .studio-group, body.day-mode .studio-note { background: rgba(255,2
       stats: {
         gamesPlayed: 0, wins: 0, bestScore: null, bestTimeMs: null,
         totalFoundationCards: 0, fastestNertzMs: null, streak: 0, bestStreak: 0,
+        bestTimeByMode: {},    // mode -> fastest winning time (ms)
       },
       achievements: {},        // id -> unlockedAt
       leaderboard: [],         // [{name, score, mode, date, timeMs}]
@@ -1488,7 +1519,7 @@ body.day-mode .studio-group, body.day-mode .studio-note { background: rgba(255,2
       adventure: { cleared: {} }, // legacy (pre-story saves)
       story: { step: 0, unlocked: {} },
       settings: { sound: true, leftHanded: false, reduceMotion: false, theme: "classic",
-                  dayMode: false, cardForm: "trad" },
+                  dayMode: false, cardForm: "trad", autoDouble: false },
     };
   }
 
@@ -2817,6 +2848,15 @@ body.day-mode .studio-group, body.day-mode .studio-note { background: rgba(255,2
         if (!d.moved) { // a tap → quick play to foundation
           const fromRect = d.origin ? d.origin.getBoundingClientRect() : d.rect;
           this.api.tap && this.api.tap(d.source, fromRect);
+          // double-tap on the same pile → auto-fill sweep (if the setting's on)
+          const key = d.source.zone + ":" + (d.source.pileIndex != null ? d.source.pileIndex : "");
+          const now = (e.timeStamp || 0);
+          if (this._lastTap && this._lastTap.key === key && now - this._lastTap.t < 320) {
+            this._lastTap = null;
+            this.api.doubleTap && this.api.doubleTap(d.source);
+          } else {
+            this._lastTap = { key: key, t: now };
+          }
           return;
         }
         const pt = e.changedTouches ? e.changedTouches[0] : e;
@@ -3898,7 +3938,7 @@ Nertz.minigames.blackjack.open({stake:20, opponent:{name:'Tester',avatar:'🦝'}
     bots: [],
     foundations: [],
     mode: "fast",
-    cfg: { opponents: 2, difficulty: "normal" },
+    cfg: { opponents: 3, difficulty: "normal" },
     timer: null,
     startTime: 0,
     running: false,
@@ -3909,7 +3949,7 @@ Nertz.minigames.blackjack.open({stake:20, opponent:{name:'Tester',avatar:'🦝'}
     App.save = Nertz.store.load();
     App.ui = new Nertz.UI();
     App.ui.setApi({
-      tap: onTap, drop: onDrop, flipStock: onFlipStock,
+      tap: onTap, drop: onDrop, flipStock: onFlipStock, doubleTap: onDoubleTap,
     });
     applySettings();
     refreshLevelChip();
@@ -4004,6 +4044,10 @@ Nertz.minigames.blackjack.open({stake:20, opponent:{name:'Tester',avatar:'🦝'}
     return picks;
   }
 
+  const MODE_LABELS = {
+    fast: "Fast Play", blitz: "Blitz", wild: "Wild Shuffle", zen: "Zen Solo",
+    ranked: "Ranked Race", daily: "Daily", story: "Story",
+  };
   const MODE_BANNERS = {
     fast: "⚡ Fast Play · 1v1 — first to empty Nertz wins",
     blitz: "🌀 Blitz · 7-card Nertz, single flips, turbo bot",
@@ -4082,13 +4126,13 @@ Nertz.minigames.blackjack.open({stake:20, opponent:{name:'Tester',avatar:'🦝'}
       App.wildMutators = pickWildMutators();
       App.wildMutators.forEach((m) => { Object.assign(rules, m.rules || {}); if (m.botSpeed) botSpeed = m.botSpeed; });
       App.xpMult = 1.25;
-      for (let i = 0; i < 2; i++) {
+      for (let i = 0; i < 3; i++) {
         botSpecs.push({ name: Nertz.PROFILES[App.cfg.difficulty].name + " " + (i + 1), avatar: Nertz.AVATARS[(i + 2) % Nertz.AVATARS.length], difficulty: App.cfg.difficulty });
       }
     } else if (mode === "tournament") {
       App.tournament = App.tournament || { round: 0, totals: {}, founded: 0, wins: 0 };
       App.tournament.round++;
-      for (let i = 0; i < 2; i++) {
+      for (let i = 0; i < 3; i++) {
         botSpecs.push({ name: Nertz.PROFILES[App.cfg.difficulty].name + " " + (i + 1), avatar: Nertz.AVATARS[i % Nertz.AVATARS.length], difficulty: App.cfg.difficulty });
       }
     } else if (!isZen) {
@@ -4122,6 +4166,7 @@ Nertz.minigames.blackjack.open({stake:20, opponent:{name:'Tester',avatar:'🦝'}
       App.ui.toast("🎲 " + App.wildMutators.map((m) => m.name + " (" + m.desc + ")").join(" · "), true);
     }
 
+    document.body.dataset.mode = mode; // per-mode visual identity (see style.css)
     updateModeBanner();
     showScreen("game");
     App.ui.render(App.engine);
@@ -4282,6 +4327,16 @@ Nertz.minigames.blackjack.open({stake:20, opponent:{name:'Tester',avatar:'🦝'}
       flyToFoundation(card, fromRect, false);
     }
   }
+  // Double-tap / double-click anywhere on the table sweeps every playable card
+  // to the foundations — but only when the "double-tap to auto-play" setting is on.
+  function onDoubleTap() {
+    if (!App.running || !App.save.settings.autoDouble) return;
+    // desktop fires both a native dblclick and the pointer double-tap — dedupe
+    const now = Date.now();
+    if (now - (App._lastAutoSweep || 0) < 400) return;
+    App._lastAutoSweep = now;
+    autoPlay();
+  }
   function onDrop(source, target, fromRect) {
     if (!App.running) return;
     const card = App.engine.peek(source);
@@ -4373,10 +4428,17 @@ Nertz.minigames.blackjack.open({stake:20, opponent:{name:'Tester',avatar:'🦝'}
     s.totalFoundationCards += me.founded;
     // bestScore uses a JSON-safe null sentinel (−Infinity becomes null on save).
     if (s.bestScore == null || me.score > s.bestScore) s.bestScore = me.score;
+    App._newRecord = false;
     if (won) {
       s.wins++; s.streak++; s.bestStreak = Math.max(s.bestStreak, s.streak);
       if (s.fastestNertzMs == null || timeMs < s.fastestNertzMs) s.fastestNertzMs = timeMs;
       if (s.bestTimeMs == null || timeMs < s.bestTimeMs) s.bestTimeMs = timeMs;
+      // per-mode time record (Tournament's clock is per-round & score-based — skip)
+      if (App.mode !== "tournament") {
+        if (!s.bestTimeByMode) s.bestTimeByMode = {};
+        const prev = s.bestTimeByMode[App.mode];
+        if (prev == null || timeMs < prev) { s.bestTimeByMode[App.mode] = timeMs; App._newRecord = true; }
+      }
     } else { s.streak = 0; }
     App.save._flags = Object.assign(App.save._flags || {}, { beatHard: (App.save._flags && App.save._flags.beatHard) || beatHard });
 
@@ -4458,10 +4520,12 @@ Nertz.minigames.blackjack.open({stake:20, opponent:{name:'Tester',avatar:'🦝'}
     } else {
       rr.append(pill("", "⏱ " + fmtTime(timeMs)), pill("", me.founded + " to foundations"));
     }
+    if (App._newRecord) rr.append(pill("record", "⏱ New record!"));
 
     $("#overlayRound").classList.add("show");
 
     if (won) { App.ui.confetti(); sfx("win"); } else { sfx("lose"); }
+    if (App._newRecord) setTimeout(() => { App.ui.toast("⏱ New " + (MODE_LABELS[App.mode] || App.mode) + " record: " + fmtTime(timeMs) + "!", true); sfx("levelup"); }, 350);
     if (App._levelUp.leveledUp) setTimeout(() => { App.ui.toast("Level up! You reached level " + App._levelUp.to + " 🎉", true); sfx("levelup"); }, 500);
     (App._unlocked || []).forEach((a, i) =>
       setTimeout(() => App.ui.toast(a.icon + "  Unlocked: " + a.name, true), 900 + i * 700));
@@ -4484,6 +4548,7 @@ Nertz.minigames.blackjack.open({stake:20, opponent:{name:'Tester',avatar:'🦝'}
 
   function backToMenu() {
     stopRound();
+    delete document.body.dataset.mode;
     showScreen("menu");
   }
 
@@ -4502,6 +4567,8 @@ Nertz.minigames.blackjack.open({stake:20, opponent:{name:'Tester',avatar:'🦝'}
     $("#hexJinx").addEventListener("click", () => castHex("jinx"));
     $("#btnAuto").addEventListener("click", autoPlay);
     $("#btnRestart").addEventListener("click", restartMode);
+    // desktop double-click anywhere on the board = the same auto-fill sweep
+    $("#screenGame").addEventListener("dblclick", onDoubleTap);
     wireKeyboard();
   }
 
@@ -4513,7 +4580,7 @@ Nertz.minigames.blackjack.open({stake:20, opponent:{name:'Tester',avatar:'🦝'}
     while (moved && App.running) {
       moved = false;
       const tries = [{ zone: "nertz" }, { zone: "waste" }];
-      for (let i = 0; i < 4; i++) tries.push({ zone: "work", pileIndex: i, cardIndex: App.engine.work[i].length - 1 });
+      for (let i = 0; i < App.engine.work.length; i++) tries.push({ zone: "work", pileIndex: i, cardIndex: App.engine.work[i].length - 1 });
       for (const s of tries) if (App.engine.playToFoundation(s)) { moved = true; total++; }
     }
     if (total) { App.ui.render(App.engine); syncHud(); sfx("foundation"); App.ui.toast("Auto-played " + total + " card" + (total > 1 ? "s" : "") + " ⤴"); }
@@ -4615,6 +4682,20 @@ Nertz.minigames.blackjack.open({stake:20, opponent:{name:'Tester',avatar:'🦝'}
       box("Fastest win", s.fastestNertzMs ? fmtTime(s.fastestNertzMs) : "—"),
     );
     wrap.appendChild(grid);
+
+    // Best times per mode (only modes you've actually won)
+    const byMode = s.bestTimeByMode || {};
+    const modes = Object.keys(MODE_LABELS).filter((m) => byMode[m] != null);
+    if (modes.length) {
+      wrap.appendChild(el("div", "set-row", "")).append(el("span", null, "Best times"));
+      const list = el("div", "besttime-list");
+      modes.sort((a, b) => byMode[a] - byMode[b]).forEach((m) => {
+        const row = el("div", "res-row");
+        row.append(el("div", "res-name", MODE_LABELS[m]), el("div", "res-score", fmtTime(byMode[m])));
+        list.appendChild(row);
+      });
+      wrap.appendChild(list);
+    }
     return wrap;
   }
 
@@ -4701,6 +4782,7 @@ Nertz.minigames.blackjack.open({stake:20, opponent:{name:'Tester',avatar:'🦝'}
       return row;
     };
     wrap.append(
+      toggle("Double-tap to auto-play", "autoDouble"),
       toggle("Sound effects", "sound"),
       toggle("Left-handed layout", "leftHanded"),
       toggle("Reduce motion", "reduceMotion"),

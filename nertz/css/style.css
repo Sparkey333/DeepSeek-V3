@@ -290,6 +290,13 @@ body.left-handed .player-board { flex-direction: row-reverse; }
   padding: 7px 14px; font-weight: 800; font-size: 14px; }
 .reward-pill.xp { color: var(--accent); }
 .reward-pill.coin { color: var(--gold); }
+.reward-pill.record {
+  color: #0c1a14; background: linear-gradient(180deg, var(--gold), #d8a017);
+  border-color: rgba(255,255,255,0.25); animation: recordPop .5s var(--ease, ease) both;
+}
+@keyframes recordPop { 0% { transform: scale(.6); opacity: 0; } 60% { transform: scale(1.12); } 100% { transform: scale(1); opacity: 1; } }
+.besttime-list { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
+.besttime-list .res-score { color: var(--accent); }
 
 .sheet-actions { display: flex; gap: 10px; }
 .btn { flex: 1; padding: 13px; border-radius: 12px; border: 0; font-weight: 800; font-size: 15px; cursor: pointer; transition: .15s; }
@@ -455,8 +462,31 @@ body.theme-has-assets .card.face-down {
 }
 body.theme-has-assets .card.face-down::after { content: none; }
 
+/* ---- Per-mode visual identity ----
+ * Each game mode carries a signature accent so the table reads differently at
+ * a glance (reinforcing the already-distinct rulesets). Set on <body data-mode>. */
+body[data-mode]           { --mode-accent: var(--accent); }
+body[data-mode="fast"]    { --mode-accent: #2fd6b0; }
+body[data-mode="blitz"]   { --mode-accent: #ff7a45; }
+body[data-mode="wild"]    { --mode-accent: #b07cff; }
+body[data-mode="zen"]     { --mode-accent: #7fb4ff; }
+body[data-mode="ranked"]  { --mode-accent: var(--gold); }
+body[data-mode="tournament"] { --mode-accent: var(--gold); }
+body[data-mode="daily"]   { --mode-accent: #5fb0e6; }
+body[data-mode="story"]   { --mode-accent: #ff6b6b; }
+/* a hairline of the mode accent under the HUD ties the whole board together */
+body[data-mode] .game-hud { box-shadow: inset 0 -2px 0 -1px color-mix(in srgb, var(--mode-accent) 55%, transparent); }
+body[data-mode] .spark-pips { color: var(--mode-accent); }
+
 /* ---- Mode banner (in-game, varies per mode) ---- */
 .mode-banner { text-align: center; font-size: 12px; font-weight: 700; color: var(--text-dim); padding: 0 14px 4px; letter-spacing: 0.02em; min-height: 16px; }
+.mode-banner.show {
+  color: var(--mode-accent, var(--text-dim));
+  border-top: 1px solid color-mix(in srgb, var(--mode-accent) 45%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--mode-accent) 45%, transparent);
+  padding: 4px 14px;
+  background: color-mix(in srgb, var(--mode-accent) 9%, transparent);
+}
 .mode-banner.mode-adventure { color: var(--gold); }
 .mode-banner.mode-ranked { color: var(--accent); }
 .mode-banner.mode-daily { color: #7fb4ff; }

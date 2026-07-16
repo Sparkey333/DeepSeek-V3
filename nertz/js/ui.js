@@ -267,6 +267,15 @@
         if (!d.moved) { // a tap → quick play to foundation
           const fromRect = d.origin ? d.origin.getBoundingClientRect() : d.rect;
           this.api.tap && this.api.tap(d.source, fromRect);
+          // double-tap on the same pile → auto-fill sweep (if the setting's on)
+          const key = d.source.zone + ":" + (d.source.pileIndex != null ? d.source.pileIndex : "");
+          const now = (e.timeStamp || 0);
+          if (this._lastTap && this._lastTap.key === key && now - this._lastTap.t < 320) {
+            this._lastTap = null;
+            this.api.doubleTap && this.api.doubleTap(d.source);
+          } else {
+            this._lastTap = { key: key, t: now };
+          }
           return;
         }
         const pt = e.changedTouches ? e.changedTouches[0] : e;
